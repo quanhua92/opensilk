@@ -67,14 +67,28 @@ fn extract_cookie_value(cookie_str: &str, cookie_name: &str) -> Option<String> {
 }
 
 pub fn parse_access_token_from_headers(
+    auth_header: Option<&HeaderValue>,
     cookie_header: Option<&HeaderValue>,
 ) -> Result<String, AppError> {
-    let cookie_str = cookie_header
-        .and_then(|h| h.to_str().ok())
-        .ok_or(AppError::Auth("Missing access token".into()))?;
+    // Priority 1: Authorization: Bearer <token>
+    if let Some(header) = auth_header.and_then(|h| h.to_str().ok()) {
+        if let Some(token) = header.strip_prefix("Bearer ") {
+            if !token.is_empty() {
+                return Ok(token.to_string());
+            }
+        }
+    }
 
-    extract_cookie_value(cookie_str, "access_token")
-        .ok_or(AppError::Auth("Missing access token".into()))
+    // Priority 2: Cookie: access_token=<token>
+    if let Some(cookie_str) = cookie_header.and_then(|h| h.to_str().ok()) {
+        if let Some(token) = extract_cookie_value(cookie_str, "access_token") {
+            return Ok(token);
+        }
+    }
+
+    Err(AppError::Auth(
+        "Missing access token. Provide Authorization: Bearer <token> header or access_token cookie".into(),
+    ))
 }
 
 use axum::extract::Request;
@@ -97,7 +111,7 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    let token = parse_access_token_from_headers(headers.get("cookie"))?;
+    let token = parse_access_token_from_headers(headers.get("authorization"), headers.get("cookie"))?;
     let claims = verify_jwt(&token, &state.jwt_secret)?;
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::Auth("Invalid user_id in token".into()))?;

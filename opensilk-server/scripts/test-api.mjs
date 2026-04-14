@@ -1,5 +1,6 @@
 const BASE = process.argv[2] || process.env.API_URL || 'http://localhost:8080';
 let cookie = '';
+let bearerToken = '';
 let workspaceId = '';
 let passed = 0;
 let failed = 0;
@@ -16,6 +17,9 @@ async function fetchJSON(path, opts = {}) {
     const setCookie = res.headers.get('set-cookie');
     if (setCookie) {
         cookie = setCookie.split(';')[0];
+        // Extract raw token from cookie for Bearer tests
+        const tokenMatch = cookie.match(/^access_token=(.+)$/);
+        if (tokenMatch) bearerToken = tokenMatch[1];
     }
     const text = await res.text().catch(() => '');
     let data = null;
@@ -111,6 +115,18 @@ async function run() {
     const unauth = await fetchJSON('/workspaces');
     cookie = origCookie;
     assert(unauth.status === 401, `returns 401`);
+    console.log();
+
+    // 9. Bearer token auth
+    console.log('GET /workspaces (Bearer token, no cookie)');
+    cookie = '';
+    const bearer = await fetchJSON('/workspaces', {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+    });
+    cookie = origCookie;
+    assert(bearer.status === 200, `returns 200`);
+    assert(Array.isArray(bearer.data), `returns array`);
+    assert(bearer.data.length >= 1, `has at least 1 workspace`);
     console.log();
 
     // Summary
