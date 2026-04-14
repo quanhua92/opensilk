@@ -7,10 +7,9 @@ logger = logging.getLogger(__name__)
 class Heartbeat:
     """Background task that updates task heartbeat every N seconds."""
 
-    def __init__(self, client, task_id: str, workspace_id: str, interval: float = 30.0):
+    def __init__(self, client, task_id: str, interval: float = 30.0):
         self.client = client
         self.task_id = task_id
-        self.workspace_id = workspace_id
         self.interval = interval
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
@@ -35,7 +34,7 @@ class Heartbeat:
     async def _run(self):
         while not self._stop_event.is_set():
             try:
-                await self.client.update_heartbeat(self.workspace_id, self.task_id)
+                await self.client.update_heartbeat(self.task_id)
                 logger.debug("Heartbeat updated for task %s", self.task_id)
             except Exception as e:
                 logger.warning("Failed to update heartbeat for task %s: %s", self.task_id, e)
