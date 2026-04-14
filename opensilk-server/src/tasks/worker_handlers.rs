@@ -109,7 +109,28 @@ pub async fn update_task(
         }
     }
 
-    // Standard update
+    // Claim: pending→running is atomic to prevent double-claim by multiple agents
+    if req.status.as_deref() == Some("running") {
+        let row = sqlx::query_as!(
+            TaskResponse,
+            r#"UPDATE tasks
+               SET status = 'running',
+                   last_heartbeat_at = NOW(),
+                   updated_at = NOW()
+               WHERE id = $1 AND status = 'pending'
+               RETURNING id, workspace_id, type AS "task_type", name, status,
+                         retry_count, max_retries, last_heartbeat_at,
+                         input_data, output_data, error_log, created_at, updated_at"#,
+            task_id,
+        )
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(AppError::NotFound("Task not found or already claimed".into()))?;
+
+        return Ok(Json(row));
+    }
+
+    // Other updates: complete, heartbeat, etc.
     let row = sqlx::query_as!(
         TaskResponse,
         r#"UPDATE tasks
