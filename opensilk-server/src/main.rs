@@ -3,6 +3,7 @@ mod db;
 mod error;
 mod state;
 mod tasks;
+mod workers;
 mod workspaces;
 
 use axum::extract::State;
@@ -63,6 +64,17 @@ async fn main() {
         jwt_secret,
         redis: redis_client,
         worker_tokens,
+    });
+
+    // Spawn background recovery worker for orphaned tasks
+    let recovery_pool = state.pool.clone();
+    let recovery_redis = state.redis.clone();
+    let recovery_interval: u64 = std::env::var("RECOVERY_INTERVAL_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(60);
+    tokio::spawn(async move {
+        workers::recovery::run(recovery_pool, recovery_redis, recovery_interval).await;
     });
 
     let app = Router::new()

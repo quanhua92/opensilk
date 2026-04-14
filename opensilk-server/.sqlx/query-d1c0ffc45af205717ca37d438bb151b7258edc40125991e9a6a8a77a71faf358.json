@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tasks\n           SET status = 'pending',\n               error_log = 'Recovered: worker heartbeat timeout',\n               retry_count = retry_count + 1,\n               updated_at = NOW()\n           WHERE status = 'running'\n             AND last_heartbeat_at < NOW() - INTERVAL '2 minutes'\n             AND retry_count < max_retries\n           RETURNING id, workspace_id, type AS \"task_type\", name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "workspace_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "task_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d1c0ffc45af205717ca37d438bb151b7258edc40125991e9a6a8a77a71faf358"
+}

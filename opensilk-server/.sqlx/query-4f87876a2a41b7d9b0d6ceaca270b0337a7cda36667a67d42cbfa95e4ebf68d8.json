@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tasks\n           SET status = 'failed',\n               error_log = 'Recovered: worker heartbeat timeout, max retries exhausted',\n               updated_at = NOW()\n           WHERE status = 'running'\n             AND last_heartbeat_at < NOW() - INTERVAL '2 minutes'\n             AND retry_count >= max_retries\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4f87876a2a41b7d9b0d6ceaca270b0337a7cda36667a67d42cbfa95e4ebf68d8"
+}

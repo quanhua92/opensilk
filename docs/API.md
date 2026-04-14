@@ -251,7 +251,7 @@ pending ──→ running ──→ completed
 - Default `max_retries` is 3
 - Worker calls `PATCH` with `{retry: true, error_log: "..."}` on failure
 - Rust handler checks `retry_count + 1 < max_retries`: if true, resets to `pending` and increments `retry_count`; if false, sets to `failed`
-- Heartbeat timeout (2 min without update) marks orphaned `running` tasks as `failed`
+- Heartbeat timeout (2 min without update) recovers orphaned `running` tasks to `pending` (if retries left) or marks `failed` (if retries exhausted)
 
 ### Task Types
 

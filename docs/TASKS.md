@@ -221,15 +221,32 @@ CREATE INDEX idx_tasks_status_heartbeat ON tasks(status, last_heartbeat_at);
 
 ## Orphan Cleanup
 
-Tasks stuck in `running` with no heartbeat for 2 minutes should be marked as failed:
+A background recovery worker (`src/workers/recovery.rs`) automatically recovers tasks stuck in `running` with no heartbeat for 2 minutes. It runs on a configurable interval (env `RECOVERY_INTERVAL_SECS`, default 60 seconds).
 
+**Recover to `pending`** (retries left):
+```sql
+UPDATE tasks
+SET status = 'pending',
+    error_log = 'Recovered: worker heartbeat timeout',
+    retry_count = retry_count + 1,
+    updated_at = NOW()
+WHERE status = 'running'
+  AND last_heartbeat_at < NOW() - INTERVAL '2 minutes'
+  AND retry_count < max_retries
+RETURNING id, workspace_id, type AS "task_type", name
+```
+
+Each recovered task is published to Redis Stream `tasks:pending` via `XADD` so opensilk-agents picks it up instantly.
+
+**Fail permanently** (retries exhausted):
 ```sql
 UPDATE tasks
 SET status = 'failed',
-    error_log = 'Worker heartbeat timeout: task orphaned',
+    error_log = 'Recovered: worker heartbeat timeout, max retries exhausted',
     updated_at = NOW()
 WHERE status = 'running'
-  AND last_heartbeat_at < NOW() - INTERVAL '2 minutes';
+  AND last_heartbeat_at < NOW() - INTERVAL '2 minutes'
+  AND retry_count >= max_retries
 ```
 
-Run manually or via future scheduled job. Not an endpoint.
+These tasks are terminal — no Redis notification needed.
