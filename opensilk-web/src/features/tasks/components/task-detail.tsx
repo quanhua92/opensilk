@@ -96,13 +96,13 @@ export default function TaskDetail({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <h3 className="mb-2 text-sm font-semibold">Input Data</h3>
-          <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
+          <pre className="max-h-64 min-w-0 whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">
             <code>{formatJson(task.input_data)}</code>
           </pre>
         </div>
         <div>
           <h3 className="mb-2 text-sm font-semibold">Output Data</h3>
-          <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
+          <pre className="max-h-64 min-w-0 whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">
             <code>{formatJson(task.output_data)}</code>
           </pre>
         </div>
@@ -115,7 +115,7 @@ export default function TaskDetail({
             <h3 className="mb-2 text-sm font-semibold text-destructive">
               Error Log
             </h3>
-            <pre className="overflow-auto rounded-md bg-destructive/10 p-3 text-xs text-destructive">
+            <pre className="max-h-64 min-w-0 whitespace-pre-wrap break-words rounded-md bg-destructive/10 p-3 text-xs text-destructive">
               <code>{task.error_log}</code>
             </pre>
           </div>
