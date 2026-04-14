@@ -1,25 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import LoginForm from "@/features/auth/components/login-form";
+import RegisterForm from "@/features/auth/components/register-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const Route = createFileRoute("/")({
-  component: LoginPage,
+export const Route = createFileRoute("/register")({
+  component: RegisterPage,
 });
 
-function LoginPage() {
+function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">OpenSilk</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardDescription>Create your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <RegisterForm />
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="underline hover:text-foreground">
-              Create one
+            Already have an account?{" "}
+            <Link to="/" className="underline hover:text-foreground">
+              Sign in
             </Link>
           </p>
         </CardContent>
