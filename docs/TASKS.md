@@ -134,6 +134,82 @@ All fields optional. Uses `COALESCE` so `null` fields don't overwrite.
 
 ---
 
+## MCP Tool Registry
+
+Workflows and agents are exposed to the frontend via **MCP-format tool listings**. Instead of hardcoding per-tool UI in the dashboard, the server describes each tool with a JSON Schema `inputSchema` and the frontend dynamically renders the form.
+
+### Endpoints
+
+| Method | Path | Returns |
+|--------|------|---------|
+| GET | `/workspaces/{id}/workflows` | `ListToolsResult` for available workflows |
+| GET | `/workspaces/{id}/agents` | `ListToolsResult` for available agents |
+
+Both require JWT auth (workspace owner).
+
+### Server-side (Rust)
+
+Each tool is built with `rmcp::model::Tool` and annotated with `ToolAnnotations`:
+
+```rust
+// Input schema struct — schemars derives JSON Schema automatically
+#[derive(Deserialize, JsonSchema)]
+pub struct HelloAgentsInput {
+    #[schemars(description = "Name to greet")]
+    pub name: Option<String>,
+}
+
+// Handler returns MCP ListToolsResult
+pub async fn list_workflows(...) -> Result<Json<ListToolsResult>, AppError> {
+    let tool = Tool::new("hello_agents", "Multi-step LangGraph workflow...", serde_json::Map::new())
+        .with_input_schema::<HelloAgentsInput>()
+        .with_title("Hello Agents")
+        .annotate(ToolAnnotations::with_title("Hello Agents").read_only(true).destructive(false));
+    Ok(Json(ListToolsResult::with_all_items(vec![tool])))
+}
+```
+
+Key fields on each `Tool`:
+- **`name`** — internal identifier, used as the task `name` when creating a task (e.g. `hello_agents`)
+- **`description`** — human-readable summary shown in the UI
+- **`inputSchema`** — JSON Schema (`$schema`, `type`, `properties`) auto-generated from the Rust struct via `schemars`
+- **`annotations.title`** — display name used in the tool dropdown (falls back to `name`)
+
+### Frontend-side (React)
+
+The `CreateTaskDialog` uses the tool registry to build its form dynamically:
+
+1. On open, fetches tools via `listWorkflows()` or `listAgents()` server functions
+2. User selects **type** (workflow/agent) → **tool** from dropdown (shows `annotations.title`)
+3. The dialog inspects `tool.inputSchema.properties`:
+   - **Simple schemas** (only `string`, `number`, `integer`, `boolean` properties) → renders individual typed inputs with descriptions from the schema
+   - **Complex schemas** → falls back to raw JSON textarea
+4. On submit, `tool.name` becomes the task `name`, collected inputs become `input_data`
+
+```
+┌─────────────────────────────────────────────────┐
+│ Create Task                                     │
+│                                                 │
+│ Type:      [Workflow ▾]                         │
+│ Tool:      [Hello Agents ▾]                     │
+│            Multi-step LangGraph workflow: ...    │
+│                                                 │
+│ Parameters:                                     │
+│   Name — Name to greet                          │
+│   [________________________]                    │
+│                                                 │
+│                          [Cancel] [Create]      │
+└─────────────────────────────────────────────────┘
+```
+
+### Adding a new workflow/agent
+
+1. **Python worker:** Add handler to `dispatcher.py` REGISTRY + implement the function
+2. **Rust server:** Add a `#[derive(JsonSchema)]` input struct, create a `Tool` in the appropriate `list_*` handler
+3. **Frontend:** Nothing to change — the form renders automatically from the schema
+
+---
+
 ## Rust Hub Implementation
 
 - **Admin handlers:** `opensilk-server/src/tasks/handlers.rs` — `create`, `list`, `get`, `update`, `cancel` (under `/workspaces/{id}/tasks`, JWT auth)
