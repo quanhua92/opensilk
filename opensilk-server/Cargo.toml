@@ -18,3 +18,4 @@ tracing-subscriber = "0.3"
 tower-http = { version = "0.6", features = ["cors"] }
 dotenvy = "0.15"
 thiserror = "2"
+fred = { version = "10", features = ["i-keys", "i-streams", "enable-rustls"], default-features = false }
