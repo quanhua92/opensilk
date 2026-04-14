@@ -6,7 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 3000 --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -22,10 +22,14 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
-    "lucide-react": "^0.545.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.18"
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss": "^4.1.18",
+    "tw-animate-css": "^1.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
