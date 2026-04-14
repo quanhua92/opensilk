@@ -2,6 +2,7 @@ mod auth;
 mod db;
 mod error;
 mod state;
+mod tasks;
 mod workspaces;
 
 use axum::extract::State;
@@ -11,7 +12,8 @@ use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
 use crate::error::AppError;
-use crate::state::AppState;
+use crate::state::{AppState, RedisClient};
+use fred::prelude::*;
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +32,27 @@ async fn main() {
 
     tracing::info!("Connected to database");
 
-    let state = Arc::new(AppState { pool, jwt_secret });
+    let redis_url = std::env::var("REDIS_URL")
+        .expect("REDIS_URL must be set");
+    let config = Config::from_url(&redis_url).expect("Invalid REDIS_URL");
+    let redis_client = RedisClient::new(config, None, None, None);
+    let _handle = redis_client.connect();
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        redis_client.wait_for_connect(),
+    )
+    .await
+    {
+        Ok(Ok(())) => tracing::info!("Connected to Redis"),
+        Ok(Err(e)) => tracing::warn!("Redis initial connect failed: {e} (fred will retry)"),
+        Err(_) => tracing::warn!("Redis connect timed out (fred will retry)"),
+    }
+
+    let state = Arc::new(AppState {
+        pool,
+        jwt_secret,
+        redis: redis_client,
+    });
 
     let app = Router::new()
         .route("/health", get(health))
