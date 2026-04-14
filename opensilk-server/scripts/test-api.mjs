@@ -1,4 +1,4 @@
-const BASE = process.env.API_URL || 'http://localhost:8080';
+const BASE = process.argv[2] || process.env.API_URL || 'http://localhost:8080';
 let cookie = '';
 let workspaceId = '';
 let passed = 0;
@@ -17,7 +17,9 @@ async function fetchJSON(path, opts = {}) {
     if (setCookie) {
         cookie = setCookie.split(';')[0];
     }
-    const data = await res.json().catch(() => null);
+    const text = await res.text().catch(() => '');
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
     return { status: res.status, data, headers: res.headers };
 }
 

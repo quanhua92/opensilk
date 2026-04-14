@@ -4,11 +4,13 @@ mod error;
 mod state;
 mod workspaces;
 
+use axum::extract::State;
 use axum::routing::get;
 use axum::Router;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
+use crate::error::AppError;
 use crate::state::AppState;
 
 #[tokio::main]
@@ -52,6 +54,7 @@ async fn main() {
         .expect("Server error");
 }
 
-async fn health() -> &'static str {
-    "ok"
+async fn health(State(state): State<Arc<AppState>>) -> Result<(), AppError> {
+    db::health_check(&state.pool).await?;
+    Ok(())
 }
