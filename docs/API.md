@@ -399,3 +399,70 @@ No request body.
 **Error responses:**
 - `401` — Not authenticated
 - `404` — Task not found or not cancellable (already completed/failed/cancelled)
+
+---
+
+## Worker Endpoints
+
+Internal endpoints for the Python worker. Authenticated by `WORKER_TOKEN` bearer — no user registration or login required.
+
+**Authentication:**
+```
+Authorization: Bearer <WORKER_TOKEN>
+```
+
+The token must match one of the values in the `WORKER_TOKEN` environment variable on the Hub. `WORKER_TOKEN` accepts a **comma-separated list** of tokens for rotation — add a new token, deploy, then remove the old one. These endpoints are not scoped to a workspace — the worker operates across all workspaces.
+
+---
+
+### GET /worker/tasks
+
+List tasks across all workspaces. **Requires `WORKER_TOKEN` bearer auth.**
+
+**Query parameters:**
+
+| Parameter | Type | Required | Notes |
+|---|---|---|---|
+| `status` | string | no | Filter by status: `pending`, `running`, `completed`, `failed`, `cancelled` |
+
+**Response:** `200 OK` — array of task objects (same shape as create response)
+
+Returns an empty array if no tasks match.
+
+**Error responses:**
+- `401` — Invalid or missing `WORKER_TOKEN`
+
+---
+
+### PATCH /worker/tasks/{task_id}
+
+Update a task (claim, complete, heartbeat, or retry). Used exclusively by the worker. **Requires `WORKER_TOKEN` bearer auth.**
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `task_id` | UUID |
+
+**Request body** (all fields optional):
+```json
+{
+  "status": "completed",
+  "output_data": { "greeting": "Hello!" },
+  "error_log": null,
+  "retry": false
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `status` | string | New status. Auto-updates `last_heartbeat_at` on change. |
+| `output_data` | object | Result data (set on completion). |
+| `error_log` | string | Error message. |
+| `retry` | boolean | When `true`, increments `retry_count` and resets to `pending` (or `failed` if max retries exhausted). |
+
+**Response:** `200 OK` — updated task object
+
+**Error responses:**
+- `401` — Invalid or missing `WORKER_TOKEN`
+- `404` — Task not found
