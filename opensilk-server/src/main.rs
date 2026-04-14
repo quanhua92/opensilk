@@ -79,7 +79,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
-        .nest("/auth", auth::auth_routes())
+        .nest("/auth", auth::auth_routes(state.clone()))
         .nest("/workspaces", workspaces::workspace_routes(state.clone()))
         .nest(
             "/worker",

@@ -1,6 +1,6 @@
 use argon2::password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
-use axum::extract::State;
+use axum::extract::{Extension, State};
 use axum::http::header::SET_COOKIE;
 use axum::response::{IntoResponse, Response};
 use axum::{http::StatusCode, Json};
@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use super::jwt::{build_cookie, clear_cookie, generate_jwt};
+use super::jwt::{AuthUser, build_cookie, clear_cookie, generate_jwt};
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -122,4 +122,20 @@ pub async fn logout() -> Response {
         Json(serde_json::json!({ "message": "logged out" })),
     )
         .into_response()
+}
+
+pub async fn me(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<AuthUser>,
+) -> Result<Json<UserResponse>, AppError> {
+    let row = sqlx::query_as!(
+        UserResponse,
+        r#"SELECT id, email, full_name, created_at FROM users WHERE id = $1"#,
+        user.user_id,
+    )
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(AppError::NotFound("User not found".into()))?;
+
+    Ok(Json(row))
 }
