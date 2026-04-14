@@ -6,8 +6,11 @@ mod tasks;
 mod workspaces;
 
 use axum::extract::State;
-use axum::routing::get;
-use axum::Router;
+use axum::http::{HeaderMap, StatusCode};
+use axum::middleware::Next;
+use axum::routing::{get, patch};
+use axum::{Router, Json};
+use serde_json::json;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
@@ -48,16 +51,32 @@ async fn main() {
         Err(_) => tracing::warn!("Redis connect timed out (fred will retry)"),
     }
 
+    let worker_tokens: Vec<String> = std::env::var("WORKER_TOKEN")
+        .unwrap_or_default()
+        .split(',')
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty())
+        .collect();
+
     let state = Arc::new(AppState {
         pool,
         jwt_secret,
         redis: redis_client,
+        worker_tokens,
     });
 
     let app = Router::new()
         .route("/health", get(health))
         .nest("/auth", auth::auth_routes())
         .nest("/workspaces", workspaces::workspace_routes(state.clone()))
+        .nest(
+            "/worker",
+            Router::new()
+                .route("/tasks", get(tasks::worker_handlers::list_all).patch(tasks::worker_handlers::update_task))
+                .route("/tasks/{task_id}", patch(tasks::worker_handlers::update_task))
+                .route_layer(axum::middleware::from_fn_with_state(state.clone(), worker_auth))
+                .with_state(state.clone()),
+        )
         .with_state(state)
         .layer(CorsLayer::permissive());
 
@@ -79,4 +98,37 @@ async fn main() {
 async fn health(State(state): State<Arc<AppState>>) -> Result<(), AppError> {
     db::health_check(&state.pool).await?;
     Ok(())
+}
+
+/// Worker auth middleware: validates Bearer token against WORKER_TOKEN env var (comma-separated).
+async fn worker_auth(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    request: axum::extract::Request,
+    next: Next,
+) -> Result<axum::response::Response, (StatusCode, Json<serde_json::Value>)> {
+    if state.worker_tokens.is_empty() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": 401, "message": "Worker token not configured on server"})),
+        ));
+    }
+
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .unwrap_or("");
+
+    if !state.worker_tokens.contains(&token.to_string()) {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": 401, "message": "Invalid worker token"})),
+        ));
+    }
+
+    Ok(next.run(request).await)
 }
