@@ -220,3 +220,182 @@ Get a single workspace by ID. Only returns the workspace if it is owned by the a
 **Error responses:**
 - `401` — Not authenticated
 - `404` — Workspace not found or not owned by user
+
+---
+
+## Tasks
+
+Tasks represent units of work dispatched to Python agents. Each task belongs to a workspace and has a `type` (`workflow` or `agent`).
+
+### Task Status Flow
+
+```
+pending ──→ running ──→ completed
+                │
+                ├──→ failed (max retries exhausted)
+                └──→ cancelled (user request)
+                │
+                └──→ pending (retry, if retry_count < max_retries)
+```
+
+| Status | Meaning | Who sets it |
+|--------|---------|-------------|
+| `pending` | Waiting to be picked up | Created automatically, or reset by retry |
+| `running` | Worker is executing | Worker claims via PATCH `{status: "running"}` |
+| `completed` | Finished successfully | Worker PATCHes `{status: "completed", output_data: {...}}` |
+| `failed` | Max retries exhausted or fatal error | Rust handler (when `retry_count >= max_retries`) |
+| `cancelled` | Cancelled by user | Only from `pending` or `running` via cancel endpoint |
+
+### Retry Behavior
+
+- Default `max_retries` is 3
+- Worker calls `PATCH` with `{retry: true, error_log: "..."}` on failure
+- Rust handler checks `retry_count + 1 < max_retries`: if true, resets to `pending` and increments `retry_count`; if false, sets to `failed`
+- Heartbeat timeout (2 min without update) marks orphaned `running` tasks as `failed`
+
+### Task Types
+
+| Type | Description |
+|------|-------------|
+| `workflow` | A rigid, step-by-step LangGraph pipeline (e.g. `hello_agents`) |
+| `agent` | An autonomous AI agent (e.g. `openclaw`) |
+
+---
+
+### POST /workspaces/{id}/tasks
+
+Create a new task. **Requires authentication** (workspace owner).
+
+**Request body:**
+```json
+{
+  "type": "workflow",
+  "name": "hello_agents",
+  "input_data": { "name": "Alice" }
+}
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `type` | string | yes | Must be `workflow` or `agent` |
+| `name` | string | yes | Handler name (e.g. `hello_agents`, `openclaw`) |
+| `input_data` | object | no | Arbitrary JSON passed to the handler |
+
+**Response:** `201 Created`
+```json
+{
+  "id": "019d8b00-0000-7000-8000-000000000001",
+  "workspace_id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+  "type": "workflow",
+  "name": "hello_agents",
+  "status": "pending",
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_heartbeat_at": "2026-04-14T06:00:00Z",
+  "input_data": { "name": "Alice" },
+  "output_data": null,
+  "error_log": null,
+  "created_at": "2026-04-14T06:00:00Z",
+  "updated_at": "2026-04-14T06:00:00Z"
+}
+```
+
+Also publishes to Redis Stream `tasks:pending` for instant worker notification.
+
+**Error responses:**
+- `401` — Not authenticated, workspace not found, or invalid `type`
+- `404` — Workspace not found
+
+---
+
+### GET /workspaces/{id}/tasks
+
+List tasks for a workspace. **Requires authentication** (workspace owner).
+
+**Query parameters:**
+
+| Parameter | Type | Required | Notes |
+|---|---|---|---|
+| `status` | string | no | Filter by status: `pending`, `running`, `completed`, `failed`, `cancelled` |
+
+**Response:** `200 OK` — array of task objects (same shape as create response)
+
+Returns an empty array if no tasks match.
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found
+
+---
+
+### GET /workspaces/{id}/tasks/{task_id}
+
+Get a single task by ID. **Requires authentication** (workspace owner).
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID (workspace) |
+| `task_id` | UUID (task) |
+
+**Response:** `200 OK` — task object
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found or task not found
+
+---
+
+### PATCH /workspaces/{id}/tasks/{task_id}
+
+Update a task. Used by the web dashboard and by workers.
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID (workspace) |
+| `task_id` | UUID (task) |
+
+**Request body** (all fields optional):
+```json
+{
+  "status": "completed",
+  "output_data": { "greeting": "Hello!" },
+  "error_log": null,
+  "retry": false
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `status` | string | New status. Auto-updates `last_heartbeat_at` on change. |
+| `output_data` | object | Result data (set on completion). |
+| `error_log` | string | Error message. |
+| `retry` | boolean | When `true`, increments `retry_count` and resets to `pending` (or `failed` if max retries exhausted). Only valid from `running` status. |
+
+**Worker usage:**
+- Heartbeat: `PATCH {status: "running"}` — updates `last_heartbeat_at`
+- Complete: `PATCH {status: "completed", output_data: {...}}`
+- Fail/retry: `PATCH {retry: true, error_log: "..."}` — server decides pending vs failed
+
+**Response:** `200 OK` — updated task object
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace or task not found
+
+---
+
+### POST /workspaces/{id}/tasks/{task_id}/cancel
+
+Cancel a pending or running task. **Requires authentication** (workspace owner).
+
+No request body.
+
+**Response:** `200 OK` — task object with `status: "cancelled"`
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Task not found or not cancellable (already completed/failed/cancelled)
