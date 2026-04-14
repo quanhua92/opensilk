@@ -1,11 +1,14 @@
 [project]
 name = "opensilk-agents"
 version = "0.1.0"
-description = "Add your description here"
+description = "Task worker for OpenSilk"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "langgraph>=1.1.6",
-    "psycopg>=3.3.3",
+    "httpx>=0.28",
     "redis>=7.4.0",
 ]
+
+[project.scripts]
+opensilk-workers = "main:cli"
