@@ -129,6 +129,76 @@ async function run() {
     assert(bearer.data.length >= 1, `has at least 1 workspace`);
     console.log();
 
+    // 10. Create task
+    console.log(`POST /workspaces/${workspaceId}/tasks`);
+    const createTask = await fetchJSON(`/workspaces/${workspaceId}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'workflow', name: 'hello_agents', input_data: { name: 'Test' } }),
+    });
+    assert(createTask.status === 201, `returns 201`);
+    assert(createTask.data?.id != null, `has id`);
+    assert(createTask.data?.status === 'pending', `status is pending`);
+    assert(createTask.data?.type === 'workflow', `type is workflow`);
+    let taskId = createTask.data?.id;
+    console.log();
+
+    // 11. List tasks
+    console.log(`GET /workspaces/${workspaceId}/tasks`);
+    const listTasks = await fetchJSON(`/workspaces/${workspaceId}/tasks`);
+    assert(listTasks.status === 200, `returns 200`);
+    assert(Array.isArray(listTasks.data), `returns array`);
+    assert(listTasks.data.length >= 1, `has at least 1 task`);
+    console.log();
+
+    // 12. List tasks with status filter
+    console.log(`GET /workspaces/${workspaceId}/tasks?status=pending`);
+    const pendingTasks = await fetchJSON(`/workspaces/${workspaceId}/tasks?status=pending`);
+    assert(pendingTasks.status === 200, `returns 200`);
+    assert(Array.isArray(pendingTasks.data), `returns array`);
+    assert(pendingTasks.data.every(t => t.status === 'pending'), `all tasks have status pending`);
+    console.log();
+
+    // 13. Get task by id
+    console.log(`GET /workspaces/${workspaceId}/tasks/${taskId}`);
+    const getTask = await fetchJSON(`/workspaces/${workspaceId}/tasks/${taskId}`);
+    assert(getTask.status === 200, `returns 200`);
+    assert(getTask.data?.id === taskId, `id matches`);
+    console.log();
+
+    // 14. Update task (simulate completion)
+    console.log(`PATCH /workspaces/${workspaceId}/tasks/${taskId}`);
+    const updateTask = await fetchJSON(`/workspaces/${workspaceId}/tasks/${taskId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'completed', output_data: { greeting: 'Hello, Test!' } }),
+    });
+    assert(updateTask.status === 200, `returns 200`);
+    assert(updateTask.data?.status === 'completed', `status is completed`);
+    assert(updateTask.data?.output_data?.greeting === 'Hello, Test!', `output_data matches`);
+    console.log();
+
+    // 15. Cancel completed task (should fail)
+    console.log(`POST /workspaces/${workspaceId}/tasks/${taskId}/cancel`);
+    const cancelFailed = await fetchJSON(`/workspaces/${workspaceId}/tasks/${taskId}/cancel`, {
+        method: 'POST',
+    });
+    assert(cancelFailed.status === 404, `returns 404 (not cancellable)`);
+    console.log();
+
+    // 16. Create and cancel a pending task
+    console.log(`POST /workspaces/${workspaceId}/tasks (for cancel)`);
+    const cancelable = await fetchJSON(`/workspaces/${workspaceId}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'agent', name: 'test_cancel' }),
+    });
+    let cancelableId = cancelable.data?.id;
+    console.log(`POST /workspaces/${workspaceId}/tasks/${cancelableId}/cancel`);
+    const cancelOk = await fetchJSON(`/workspaces/${workspaceId}/tasks/${cancelableId}/cancel`, {
+        method: 'POST',
+    });
+    assert(cancelOk.status === 200, `returns 200`);
+    assert(cancelOk.data?.status === 'cancelled', `status is cancelled`);
+    console.log();
+
     // Summary
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exit(failed > 0 ? 1 : 0);
