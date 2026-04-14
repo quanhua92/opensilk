@@ -56,13 +56,19 @@ async def poll_with_stream(client: HubClient, worker_id: str):
                     count=10,
                 )
 
+                task_id = None
                 if results:
                     for _stream_name, messages in results:
-                        for msg_id, _fields in messages:
+                        for msg_id, fields in messages:
                             last_id = msg_id
                             logger.debug("Received stream event: %s", msg_id)
+                            data = fields.get("data")
+                            if data:
+                                import json
+                                event = json.loads(data)
+                                task_id = event.get("task_id")
 
-                task = await client.claim_task()
+                task = await client.claim_task(task_id)
                 if task:
                     logger.info(
                         "Worker %s claimed task %s (%s/%s)",

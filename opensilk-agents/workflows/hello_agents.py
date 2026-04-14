@@ -31,7 +31,7 @@ def respond_cheerful(state: HelloState) -> HelloState:
 def respond_curious(state: HelloState) -> HelloState:
     return {
         "response": f"{state['greeting']} Interesting name. Did you know OpenSilk "
-        "uses a three-tier architecture: Dashboard, Hub, and Workers?"
+        "uses a three-tier architecture: opensilk-web, opensilk-server, and opensilk-agents?"
     }
 
 

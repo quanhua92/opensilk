@@ -124,10 +124,10 @@ opensilk-agents is already running, blocked on `XREAD tasks:pending` with a 5-se
 
 ```
 [XREAD receives message from tasks:pending stream]
-→ calls HubClient.claim_task()
-  → GET  /worker/tasks?status=pending          (lists all pending tasks across all workspaces)
-  → takes first task
-  → PATCH /worker/tasks/{task_id} {"status":"running"}   (claims it)
+→ extracts task_id from stream message
+→ calls HubClient.claim_task(task_id)
+  → PATCH /worker/tasks/{task_id} {"status":"running"}   (atomic claim: only succeeds if status='pending')
+  → if 404 (already claimed by another agent), skip and wait for next
 → starts Heartbeat (30s interval)
 → dispatches to hello_agents workflow
 ```

@@ -23,23 +23,36 @@ class HubClient:
             resp.raise_for_status()
             return resp
 
-    async def claim_task(self) -> dict | None:
-        """Get a pending task and claim it by setting status to running."""
+    async def claim_task(self, task_id: str | None = None) -> dict | None:
+        """Claim a task by ID (from Redis Stream) or grab the first pending task."""
+        if task_id:
+            return await self._claim_by_id(task_id)
+        return await self._claim_next_pending()
+
+    async def _claim_by_id(self, task_id: str) -> dict | None:
+        """Claim a specific task by PATCHing its status to running."""
         try:
-            resp = await self._request("GET", "/worker/tasks?status=pending")
-            tasks = resp.json()
-            if not tasks:
-                return None
-
-            task = tasks[0]
-            task_id = task["id"]
-
             resp = await self._request(
                 "PATCH",
                 f"/worker/tasks/{task_id}",
                 json={"status": "running"},
             )
             return resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return None
+            raise
+
+    async def _claim_next_pending(self) -> dict | None:
+        """Get the first pending task and claim it."""
+        try:
+            resp = await self._request("GET", "/worker/tasks?status=pending")
+            tasks = resp.json()
+            if not tasks:
+                return None
+
+            task_id = tasks[0]["id"]
+            return await self._claim_by_id(task_id)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return None
