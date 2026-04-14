@@ -81,6 +81,34 @@ async function run() {
     assert(cookie !== '', `Set-Cookie header present (access_token=...)`);
     console.log();
 
+    // 4b. Get current user (/auth/me with cookie)
+    console.log('GET /auth/me (with cookie)');
+    const me = await fetchJSON('/auth/me');
+    assert(me.status === 200, `returns 200`);
+    assert(me.data?.id === login.data?.id, `id matches logged-in user`);
+    assert(me.data?.email === email, `email matches`);
+    console.log();
+
+    // 4c. /auth/me without cookie (should 401)
+    console.log('GET /auth/me (no cookie)');
+    const origCookieForMe = cookie;
+    cookie = '';
+    const meUnauth = await fetchJSON('/auth/me');
+    cookie = origCookieForMe;
+    assert(meUnauth.status === 401, `returns 401`);
+    console.log();
+
+    // 4d. /auth/me with Bearer token
+    console.log('GET /auth/me (Bearer token)');
+    cookie = '';
+    const meBearer = await fetchJSON('/auth/me', {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+    });
+    cookie = origCookieForMe;
+    assert(meBearer.status === 200, `returns 200`);
+    assert(meBearer.data?.email === email, `email matches`);
+    console.log();
+
     // 5. Create workspace
     console.log('POST /workspaces');
     const ws = await fetchJSON('/workspaces', {
