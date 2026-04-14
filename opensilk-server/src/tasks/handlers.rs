@@ -64,45 +64,58 @@ pub struct HelloAgentsInput {
     pub name: Option<String>,
 }
 
-// --- MCP Tool Registry: handlers ---
+// --- MCP Tool Registry: query param ---
 
-pub async fn list_workflows(
-    State(state): State<Arc<AppState>>,
-    Extension(user): Extension<AuthUser>,
-    Path(workspace_id): Path<Uuid>,
-) -> Result<Json<ListToolsResult>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
-
-    let tool = Tool::new("hello_agents", "Multi-step LangGraph workflow: greet, assess mood, branch to response", serde_json::Map::new())
-        .with_input_schema::<HelloAgentsInput>()
-        .with_title("Hello Agents")
-        .annotate(
-            ToolAnnotations::with_title("Hello Agents")
-                .read_only(true)
-                .destructive(false)
-                .open_world(true),
-        );
-
-    Ok(Json(ListToolsResult::with_all_items(vec![tool])))
+#[derive(Deserialize)]
+pub struct ListTaskTypesQuery {
+    #[serde(rename = "type")]
+    pub task_type: Option<String>,
 }
 
-pub async fn list_agents(
+// --- MCP Tool Registry: handler ---
+
+pub async fn list_task_types(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<AuthUser>,
     Path(workspace_id): Path<Uuid>,
+    Query(params): Query<ListTaskTypesQuery>,
 ) -> Result<Json<ListToolsResult>, AppError> {
     verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
 
-    let tool = Tool::new("openclaw", "Placeholder autonomous agent", serde_json::Map::new())
-        .with_title("OpenClaw")
-        .annotate(
-            ToolAnnotations::with_title("OpenClaw")
-                .read_only(true)
-                .destructive(false)
-                .open_world(true),
-        );
+    let mut tools = Vec::new();
 
-    Ok(Json(ListToolsResult::with_all_items(vec![tool])))
+    match params.task_type.as_deref() {
+        Some("workflow") | None => {
+            let tool = Tool::new("hello_agents", "Multi-step LangGraph workflow: greet, assess mood, branch to response", serde_json::Map::new())
+                .with_input_schema::<HelloAgentsInput>()
+                .with_title("Hello Agents")
+                .annotate(
+                    ToolAnnotations::with_title("Hello Agents")
+                        .read_only(true)
+                        .destructive(false)
+                        .open_world(true),
+                );
+            tools.push(tool);
+        }
+        _ => {}
+    }
+
+    match params.task_type.as_deref() {
+        Some("agentic") | None => {
+            let tool = Tool::new("openclaw", "Placeholder autonomous agent", serde_json::Map::new())
+                .with_title("OpenClaw")
+                .annotate(
+                    ToolAnnotations::with_title("OpenClaw")
+                        .read_only(true)
+                        .destructive(false)
+                        .open_world(true),
+                );
+            tools.push(tool);
+        }
+        _ => {}
+    }
+
+    Ok(Json(ListToolsResult::with_all_items(tools)))
 }
 
 // --- Helper: verify workspace ownership ---
@@ -137,9 +150,9 @@ pub async fn create(
 ) -> Result<(StatusCode, Json<TaskResponse>), AppError> {
     verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
 
-    if req.task_type != "workflow" && req.task_type != "agent" {
+    if req.task_type != "workflow" && req.task_type != "agentic" {
         return Err(AppError::Auth(
-            "type must be 'workflow' or 'agent'".into(),
+            "type must be 'workflow' or 'agentic'".into(),
         ));
     }
 

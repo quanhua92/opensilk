@@ -225,7 +225,7 @@ Get a single workspace by ID. Only returns the workspace if it is owned by the a
 
 ## Tasks
 
-Tasks represent units of work dispatched to Python agents. Each task belongs to a workspace and has a `type` (`workflow` or `agent`).
+Tasks represent units of work dispatched to Python agents. Each task belongs to a workspace and has a `type` (`workflow` or `agentic`).
 
 ### Task Status Flow
 
@@ -258,7 +258,7 @@ pending ──→ running ──→ completed
 | Type | Description |
 |------|-------------|
 | `workflow` | A rigid, step-by-step LangGraph pipeline (e.g. `hello_agents`) |
-| `agent` | An autonomous AI agent (e.g. `openclaw`) |
+| `agentic` | A dynamic ReAct-loop AI agent (e.g. `openclaw`) |
 
 ---
 
@@ -277,7 +277,7 @@ Create a new task. **Requires authentication** (workspace owner).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `type` | string | yes | Must be `workflow` or `agent` |
+| `type` | string | yes | Must be `workflow` or `agentic` |
 | `name` | string | yes | Handler name (e.g. `hello_agents`, `openclaw`) |
 | `input_data` | object | no | Arbitrary JSON passed to the handler |
 
@@ -399,6 +399,52 @@ No request body.
 **Error responses:**
 - `401` — Not authenticated
 - `404` — Task not found or not cancellable (already completed/failed/cancelled)
+
+---
+
+### GET /workspaces/{id}/tasks/types
+
+List available MCP tools for a workspace. **Requires authentication** (workspace owner).
+
+**Query parameters:**
+
+| Parameter | Type | Required | Notes |
+|---|---|---|---|
+| `type` | string | no | Filter by task type: `workflow` or `agentic`. Omit to return all tools. |
+
+**Response:** `200 OK`
+```json
+{
+  "tools": [
+    {
+      "name": "hello_agents",
+      "description": "Multi-step LangGraph workflow: greet, assess mood, branch to response",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "Name to greet"
+          }
+        }
+      },
+      "annotations": {
+        "title": "Hello Agents",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    }
+  ]
+}
+```
+
+Returns a `ListToolsResult` (MCP format). The `tools` array contains one entry per registered handler for the requested type.
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found
 
 ---
 

@@ -1,7 +1,7 @@
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('workflow', 'agent')),
+    type TEXT NOT NULL CHECK (type IN ('workflow', 'agentic')),
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),

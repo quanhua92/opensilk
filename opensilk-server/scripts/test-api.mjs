@@ -216,7 +216,7 @@ async function run() {
     console.log(`POST /workspaces/${workspaceId}/tasks (for cancel)`);
     const cancelable = await fetchJSON(`/workspaces/${workspaceId}/tasks`, {
         method: 'POST',
-        body: JSON.stringify({ type: 'agent', name: 'test_cancel' }),
+        body: JSON.stringify({ type: 'agentic', name: 'test_cancel' }),
     });
     let cancelableId = cancelable.data?.id;
     console.log(`POST /workspaces/${workspaceId}/tasks/${cancelableId}/cancel`);
@@ -227,9 +227,9 @@ async function run() {
     assert(cancelOk.data?.status === 'cancelled', `status is cancelled`);
     console.log();
 
-    // 17. List workflows (MCP tool registry)
-    console.log(`GET /workspaces/${workspaceId}/workflows`);
-    const workflows = await fetchJSON(`/workspaces/${workspaceId}/workflows`);
+    // 17. List task types — workflows (MCP tool registry)
+    console.log(`GET /workspaces/${workspaceId}/tasks/types?type=workflow`);
+    const workflows = await fetchJSON(`/workspaces/${workspaceId}/tasks/types?type=workflow`);
     assert(workflows.status === 200, `returns 200`);
     assert(Array.isArray(workflows.data?.tools), `has tools array`);
     assert(workflows.data?.tools.length >= 1, `has at least 1 workflow`);
@@ -240,15 +240,26 @@ async function run() {
     assert(wfTool?.annotations?.title != null, `has annotations.title`);
     console.log();
 
-    // 18. List agents (MCP tool registry)
-    console.log(`GET /workspaces/${workspaceId}/agents`);
-    const agents = await fetchJSON(`/workspaces/${workspaceId}/agents`);
+    // 18. List task types — agentic (MCP tool registry)
+    console.log(`GET /workspaces/${workspaceId}/tasks/types?type=agentic`);
+    const agents = await fetchJSON(`/workspaces/${workspaceId}/tasks/types?type=agentic`);
     assert(agents.status === 200, `returns 200`);
     assert(Array.isArray(agents.data?.tools), `has tools array`);
-    assert(agents.data?.tools.length >= 1, `has at least 1 agent`);
+    assert(agents.data?.tools.length >= 1, `has at least 1 agentic tool`);
     const agTool = agents.data?.tools[0];
     assert(agTool?.name === 'openclaw', `first tool name is openclaw`);
     assert(agTool?.annotations?.title != null, `has annotations.title`);
+    console.log();
+
+    // 19. List task types — no filter (returns all)
+    console.log(`GET /workspaces/${workspaceId}/tasks/types`);
+    const allTypes = await fetchJSON(`/workspaces/${workspaceId}/tasks/types`);
+    assert(allTypes.status === 200, `returns 200`);
+    assert(Array.isArray(allTypes.data?.tools), `has tools array`);
+    assert(allTypes.data?.tools.length === 2, `returns both workflow and agentic tools`);
+    const toolNames = allTypes.data?.tools.map(t => t.name);
+    assert(toolNames.includes('hello_agents'), `contains hello_agents`);
+    assert(toolNames.includes('openclaw'), `contains openclaw`);
     console.log();
 
     // Summary

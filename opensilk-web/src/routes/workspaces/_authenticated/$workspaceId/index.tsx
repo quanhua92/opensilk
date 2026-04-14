@@ -37,7 +37,7 @@ function WorkspaceDetailPage() {
   }, [hasActiveTasks, workspaceId]);
 
   const handleCreateTask = async (data: {
-    type: "workflow" | "agent";
+    type: "workflow" | "agentic";
     name: string;
     input_data?: Record<string, unknown>;
   }) => {

@@ -2,7 +2,7 @@ import type { Tool, ToolAnnotations, ListToolsResult } from "@modelcontextprotoc
 
 export type { Tool, ToolAnnotations, ListToolsResult };
 
-export type TaskType = "workflow" | "agent";
+export type TaskType = "workflow" | "agentic";
 export type TaskStatus =
   | "pending"
   | "running"

@@ -57,20 +57,11 @@ export const cancelTask = createServerFn({ method: "POST" })
     );
   });
 
-export const listWorkflows = createServerFn({ method: "GET" })
-  .inputValidator((data: { workspaceId: string }) => data)
+export const listTaskTypes = createServerFn({ method: "GET" })
+  .inputValidator((data: { workspaceId: string; type: string }) => data)
   .handler(async ({ data }) => {
     return proxy.get<ListToolsResult>(
-      `/workspaces/${data.workspaceId}/workflows`,
-      getCookie(),
-    );
-  });
-
-export const listAgents = createServerFn({ method: "GET" })
-  .inputValidator((data: { workspaceId: string }) => data)
-  .handler(async ({ data }) => {
-    return proxy.get<ListToolsResult>(
-      `/workspaces/${data.workspaceId}/agents`,
+      `/workspaces/${data.workspaceId}/tasks/types?type=${data.type}`,
       getCookie(),
     );
   });

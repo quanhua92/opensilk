@@ -21,17 +21,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  listWorkflows,
-  listAgents,
-} from "@/features/tasks/server-fns";
+import { listTaskTypes } from "@/features/tasks/server-fns";
 import type { Tool, ListToolsResult } from "@/features/tasks/types";
 
 interface CreateTaskDialogProps {
   workspaceId: string;
   isCreating: boolean;
   onCreate: (data: {
-    type: "workflow" | "agent";
+    type: "workflow" | "agentic";
     name: string;
     input_data?: Record<string, unknown>;
   }) => Promise<void>;
@@ -137,7 +134,7 @@ export default function CreateTaskDialog({
 
   const form = useForm({
     defaultValues: {
-      type: "workflow" as "workflow" | "agent",
+      type: "workflow" as "workflow" | "agentic",
       name: "" as string,
       input_data: undefined as Record<string, unknown> | undefined,
     },
@@ -172,13 +169,11 @@ export default function CreateTaskDialog({
   });
 
   const fetchTools = useCallback(
-    async (type: "workflow" | "agent") => {
+    async (type: "workflow" | "agentic") => {
       setLoadingTools(true);
       try {
         const result: ListToolsResult =
-          type === "workflow"
-            ? await listWorkflows({ data: { workspaceId } })
-            : await listAgents({ data: { workspaceId } });
+          await listTaskTypes({ data: { workspaceId, type } });
         setTools(result.tools);
       } catch {
         setTools([]);
@@ -224,7 +219,7 @@ export default function CreateTaskDialog({
   };
 
   const handleTypeChange = (val: string) => {
-    form.setFieldValue("type", val as "workflow" | "agent");
+    form.setFieldValue("type", val as "workflow" | "agentic");
     form.setFieldValue("name", "");
     form.setFieldValue("input_data", undefined);
     setSelectedToolName("");
@@ -276,7 +271,7 @@ export default function CreateTaskDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="workflow">Workflow</SelectItem>
-                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="agentic">Agentic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

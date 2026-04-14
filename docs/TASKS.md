@@ -42,7 +42,7 @@ Worker endpoints are separate from user endpoints. No registration or login need
 | Type | Description |
 |------|-------------|
 | `workflow` | A rigid, step-by-step LangGraph pipeline (e.g. `hello_agents`) |
-| `agent` | An autonomous AI agent (e.g. `openclaw`) |
+| `agentic` | A dynamic ReAct-loop AI agent (e.g. `openclaw`) |
 
 ---
 
@@ -142,8 +142,8 @@ Workflows and agents are exposed to the frontend via **MCP-format tool listings*
 
 | Method | Path | Returns |
 |--------|------|---------|
-| GET | `/workspaces/{id}/workflows` | `ListToolsResult` for available workflows |
-| GET | `/workspaces/{id}/agents` | `ListToolsResult` for available agents |
+| GET | `/workspaces/{id}/tasks/types?type=workflow` | `ListToolsResult` for available workflows |
+| GET | `/workspaces/{id}/tasks/types?type=agentic` | `ListToolsResult` for available agentic tools |
 
 Both require JWT auth (workspace owner).
 
@@ -179,7 +179,7 @@ Key fields on each `Tool`:
 
 The `CreateTaskDialog` uses the tool registry to build its form dynamically:
 
-1. On open, fetches tools via `listWorkflows()` or `listAgents()` server functions
+1. On open, fetches tools via `listTaskTypes({type: ...})` server function
 2. User selects **type** (workflow/agent) → **tool** from dropdown (shows `annotations.title`)
 3. The dialog inspects `tool.inputSchema.properties`:
    - **Simple schemas** (only `string`, `number`, `integer`, `boolean` properties) → renders individual typed inputs with descriptions from the schema
@@ -259,7 +259,7 @@ No workspace ID or user token needed. Worker polls all pending tasks across all 
 ```python
 REGISTRY = {
     "workflow": { "hello_agents": run_hello_agents },
-    "agent":    { "openclaw": run_openclaw },
+    "agentic":  { "openclaw": run_openclaw },
 }
 ```
 
@@ -275,7 +275,7 @@ Migration: `opensilk-server/migrations/003_tasks.sql`
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('workflow', 'agent')),
+    type TEXT NOT NULL CHECK (type IN ('workflow', 'agentic')),
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),

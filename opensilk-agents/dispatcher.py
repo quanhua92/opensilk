@@ -10,7 +10,7 @@ REGISTRY = {
     "workflow": {
         "hello_agents": run_hello_agents,
     },
-    "agent": {
+    "agentic": {
         "openclaw": run_openclaw,
     },
 }
