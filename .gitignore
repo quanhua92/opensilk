@@ -1,0 +1,30 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Rust (opensilk-server) ---
+/opensilk-server/target/
+**/*.rs.bk
+
+# --- Python (opensilk-agents) ---
+.venv/
+__pycache__/
+*.pyc
+.python-version
+.uv/
+
+# --- Web (opensilk-web) ---
+node_modules/
+/opensilk-web/dist/
+.env
+.env.local
+.env.*.local
+
+# --- Databases & Docker ---
+.data/
+postgres_data/
+redis_data/
+
+# --- Misc ---
+TODO.md
+docker-compose.local.yml

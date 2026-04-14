@@ -1,0 +1,97 @@
+services:
+  # --- The Hub (Rust) ---
+  opensilk-server:
+    build:
+      context: ./opensilk-server
+      dockerfile: Dockerfile
+    container_name: opensilk-server
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      - RUST_LOG=info
+      - PORT=8080
+      - DATABASE_URL=postgres://opensilk:${POSTGRES_PASSWORD}@postgres:5432/opensilk
+      - REDIS_URL=redis://default:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --- The Workers (Python) ---
+  opensilk-agents:
+    build:
+      context: ./opensilk-agents
+      dockerfile: Dockerfile
+    container_name: opensilk-agents
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://default:${REDIS_PASSWORD}@redis:6379/0
+      - DATABASE_URL=postgres://opensilk:${POSTGRES_PASSWORD}@postgres:5432/opensilk
+      - HUB_URL=http://opensilk-server:8080
+    depends_on:
+      opensilk-server:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- The Dashboard (Vite) ---
+  opensilk-web:
+    build:
+      context: ./opensilk-web
+      dockerfile: Dockerfile
+    container_name: opensilk-web
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - opensilk-server
+    restart: unless-stopped
+
+  # --- Storage (Postgres 18) ---
+  postgres:
+    image: pgvector/pgvector:pg18-trixie
+    container_name: opensilk-postgres
+    environment:
+      - POSTGRES_USER=opensilk
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=opensilk
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opensilk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Quick Memory (Redis 8) ---
+  redis:
+    image: redis:8-alpine
+    container_name: opensilk-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 2gb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
