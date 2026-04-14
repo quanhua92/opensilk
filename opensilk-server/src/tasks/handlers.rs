@@ -201,8 +201,8 @@ pub async fn update(
     // check retry_count against max_retries server-side
     if req.retry == Some(true) {
         // Fetch current task to check retry count
-        let current = sqlx::query_scalar!(
-            r#"SELECT retry_count AS "retry_count!", max_retries AS "max_retries!"
+        let row = sqlx::query!(
+            r#"SELECT retry_count, max_retries
                FROM tasks WHERE id = $1 AND workspace_id = $2"#,
             task_id,
             workspace_id,
@@ -211,7 +211,7 @@ pub async fn update(
         .await?
         .ok_or(AppError::NotFound("Task not found".into()))?;
 
-        if current.retry_count + 1 >= current.max_retries {
+        if row.retry_count + 1 >= row.max_retries {
             // Max retries exhausted — mark as failed
             let row = sqlx::query_as!(
                 TaskResponse,

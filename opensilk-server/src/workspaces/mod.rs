@@ -1,6 +1,6 @@
 pub mod handlers;
 
-use axum::routing::{get, patch, post};
+use axum::routing::{get, post};
 use axum::{middleware, Router};
 use std::sync::Arc;
 
