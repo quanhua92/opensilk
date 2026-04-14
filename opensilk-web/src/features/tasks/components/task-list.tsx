@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -33,19 +35,12 @@ export default function TaskList({ tasks, workspaceId }: TaskListProps) {
             <TableHead className="w-[120px]">Status</TableHead>
             <TableHead className="w-[80px]">Retries</TableHead>
             <TableHead className="w-[130px]">Created</TableHead>
+            <TableHead className="w-[60px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.map((task) => (
-            <TableRow
-              key={task.id}
-              className="cursor-pointer"
-              onClick={() =>
-                navigate({
-                  to: `/workspaces/${workspaceId}/tasks/${task.id}`,
-                })
-              }
-            >
+            <TableRow key={task.id}>
               <TableCell className="font-medium">{task.name}</TableCell>
               <TableCell>
                 <Badge variant="outline">{task.type}</Badge>
@@ -58,6 +53,19 @@ export default function TaskList({ tasks, workspaceId }: TaskListProps) {
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {new Date(task.created_at).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    navigate({
+                      to: `/workspaces/${workspaceId}/tasks/${task.id}`,
+                    })
+                  }
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}

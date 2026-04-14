@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkspacesAuthenticatedRouteImport } from './routes/workspaces/_authenticated'
 import { Route as WorkspacesAuthenticatedIndexRouteImport } from './routes/workspaces/_authenticated/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId'
+import { Route as WorkspacesAuthenticatedWorkspaceIdIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/$taskId'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -43,6 +44,12 @@ const WorkspacesAuthenticatedWorkspaceIdRoute =
     path: '/$workspaceId',
     getParentRoute: () => WorkspacesAuthenticatedRoute,
   } as any)
+const WorkspacesAuthenticatedWorkspaceIdIndexRoute =
+  WorkspacesAuthenticatedWorkspaceIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
 const WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute =
   WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
@@ -56,13 +63,14 @@ export interface FileRoutesByFullPath {
   '/workspaces': typeof WorkspacesAuthenticatedRouteWithChildren
   '/workspaces/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdRouteWithChildren
   '/workspaces/': typeof WorkspacesAuthenticatedIndexRoute
+  '/workspaces/$workspaceId/': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/workspaces/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdRouteWithChildren
   '/workspaces': typeof WorkspacesAuthenticatedIndexRoute
+  '/workspaces/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
 }
 export interface FileRoutesById {
@@ -72,6 +80,7 @@ export interface FileRoutesById {
   '/workspaces/_authenticated': typeof WorkspacesAuthenticatedRouteWithChildren
   '/workspaces/_authenticated/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdRouteWithChildren
   '/workspaces/_authenticated/': typeof WorkspacesAuthenticatedIndexRoute
+  '/workspaces/_authenticated/$workspaceId/': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
   '/workspaces/_authenticated/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
 }
 export interface FileRouteTypes {
@@ -82,13 +91,14 @@ export interface FileRouteTypes {
     | '/workspaces'
     | '/workspaces/$workspaceId'
     | '/workspaces/'
+    | '/workspaces/$workspaceId/'
     | '/workspaces/$workspaceId/tasks/$taskId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/register'
-    | '/workspaces/$workspaceId'
     | '/workspaces'
+    | '/workspaces/$workspaceId'
     | '/workspaces/$workspaceId/tasks/$taskId'
   id:
     | '__root__'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/workspaces/_authenticated'
     | '/workspaces/_authenticated/$workspaceId'
     | '/workspaces/_authenticated/'
+    | '/workspaces/_authenticated/$workspaceId/'
     | '/workspaces/_authenticated/$workspaceId/tasks/$taskId'
   fileRoutesById: FileRoutesById
 }
@@ -143,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdRouteImport
       parentRoute: typeof WorkspacesAuthenticatedRoute
     }
+    '/workspaces/_authenticated/$workspaceId/': {
+      id: '/workspaces/_authenticated/$workspaceId/'
+      path: '/'
+      fullPath: '/workspaces/$workspaceId/'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdIndexRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
     '/workspaces/_authenticated/$workspaceId/tasks/$taskId': {
       id: '/workspaces/_authenticated/$workspaceId/tasks/$taskId'
       path: '/tasks/$taskId'
@@ -154,11 +172,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface WorkspacesAuthenticatedWorkspaceIdRouteChildren {
+  WorkspacesAuthenticatedWorkspaceIdIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
   WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
 }
 
 const WorkspacesAuthenticatedWorkspaceIdRouteChildren: WorkspacesAuthenticatedWorkspaceIdRouteChildren =
   {
+    WorkspacesAuthenticatedWorkspaceIdIndexRoute:
+      WorkspacesAuthenticatedWorkspaceIdIndexRoute,
     WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute:
       WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute,
   }
