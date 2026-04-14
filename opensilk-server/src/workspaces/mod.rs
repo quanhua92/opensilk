@@ -22,5 +22,8 @@ pub fn workspace_routes(state: Arc<AppState>) -> Router<Arc<AppState>> {
             "/{id}/tasks/{task_id}/cancel",
             post(tasks::handlers::cancel),
         )
+        // MCP tool registry endpoints
+        .route("/{id}/workflows", get(tasks::handlers::list_workflows))
+        .route("/{id}/agents", get(tasks::handlers::list_agents))
         .route_layer(middleware::from_fn_with_state(state, auth_middleware))
 }

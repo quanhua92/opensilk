@@ -2,6 +2,8 @@ use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use fred::prelude::*;
+use rmcp::model::{ListToolsResult, Tool, ToolAnnotations};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -51,6 +53,56 @@ pub struct UpdateTaskRequest {
     pub output_data: Option<serde_json::Value>,
     pub error_log: Option<String>,
     pub retry: Option<bool>,
+}
+
+// --- MCP Tool Registry: input schema structs ---
+
+#[derive(Deserialize, JsonSchema)]
+#[allow(dead_code)]
+pub struct HelloAgentsInput {
+    #[schemars(description = "Name to greet")]
+    pub name: Option<String>,
+}
+
+// --- MCP Tool Registry: handlers ---
+
+pub async fn list_workflows(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<AuthUser>,
+    Path(workspace_id): Path<Uuid>,
+) -> Result<Json<ListToolsResult>, AppError> {
+    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+
+    let tool = Tool::new("hello_agents", "Multi-step LangGraph workflow: greet, assess mood, branch to response", serde_json::Map::new())
+        .with_input_schema::<HelloAgentsInput>()
+        .with_title("Hello Agents")
+        .annotate(
+            ToolAnnotations::with_title("Hello Agents")
+                .read_only(true)
+                .destructive(false)
+                .open_world(true),
+        );
+
+    Ok(Json(ListToolsResult::with_all_items(vec![tool])))
+}
+
+pub async fn list_agents(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<AuthUser>,
+    Path(workspace_id): Path<Uuid>,
+) -> Result<Json<ListToolsResult>, AppError> {
+    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+
+    let tool = Tool::new("openclaw", "Placeholder autonomous agent", serde_json::Map::new())
+        .with_title("OpenClaw")
+        .annotate(
+            ToolAnnotations::with_title("OpenClaw")
+                .read_only(true)
+                .destructive(false)
+                .open_world(true),
+        );
+
+    Ok(Json(ListToolsResult::with_all_items(vec![tool])))
 }
 
 // --- Helper: verify workspace ownership ---

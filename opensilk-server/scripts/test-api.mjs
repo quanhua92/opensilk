@@ -227,6 +227,30 @@ async function run() {
     assert(cancelOk.data?.status === 'cancelled', `status is cancelled`);
     console.log();
 
+    // 17. List workflows (MCP tool registry)
+    console.log(`GET /workspaces/${workspaceId}/workflows`);
+    const workflows = await fetchJSON(`/workspaces/${workspaceId}/workflows`);
+    assert(workflows.status === 200, `returns 200`);
+    assert(Array.isArray(workflows.data?.tools), `has tools array`);
+    assert(workflows.data?.tools.length >= 1, `has at least 1 workflow`);
+    const wfTool = workflows.data?.tools[0];
+    assert(wfTool?.name === 'hello_agents', `first tool name is hello_agents`);
+    assert(typeof wfTool?.inputSchema?.type === 'string', `inputSchema has type field`);
+    assert(wfTool?.inputSchema?.type === 'object', `inputSchema type is object`);
+    assert(wfTool?.annotations?.title != null, `has annotations.title`);
+    console.log();
+
+    // 18. List agents (MCP tool registry)
+    console.log(`GET /workspaces/${workspaceId}/agents`);
+    const agents = await fetchJSON(`/workspaces/${workspaceId}/agents`);
+    assert(agents.status === 200, `returns 200`);
+    assert(Array.isArray(agents.data?.tools), `has tools array`);
+    assert(agents.data?.tools.length >= 1, `has at least 1 agent`);
+    const agTool = agents.data?.tools[0];
+    assert(agTool?.name === 'openclaw', `first tool name is openclaw`);
+    assert(agTool?.annotations?.title != null, `has annotations.title`);
+    console.log();
+
     // Summary
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exit(failed > 0 ? 1 : 0);

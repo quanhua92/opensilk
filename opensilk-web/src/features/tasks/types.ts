@@ -1,3 +1,7 @@
+import type { Tool, ToolAnnotations, ListToolsResult } from "@modelcontextprotocol/client";
+
+export type { Tool, ToolAnnotations, ListToolsResult };
+
 export type TaskType = "workflow" | "agent";
 export type TaskStatus =
   | "pending"

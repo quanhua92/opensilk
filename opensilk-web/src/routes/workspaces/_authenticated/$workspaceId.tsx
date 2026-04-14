@@ -43,7 +43,7 @@ function WorkspaceDetailPage() {
         <h1 className="text-2xl font-bold tracking-tight">
           Workspace: {workspaceId.slice(0, 8)}...
         </h1>
-        <CreateTaskDialog isCreating={isCreating} onCreate={handleCreateTask} />
+        <CreateTaskDialog workspaceId={workspaceId} isCreating={isCreating} onCreate={handleCreateTask} />
       </div>
 
       <OverviewStats tasks={tasks} />

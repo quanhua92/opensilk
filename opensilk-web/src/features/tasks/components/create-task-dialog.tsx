@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,51 +21,148 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-const createTaskSchema = z.object({
-  type: z.enum(["workflow", "agent"]),
-  name: z.string().min(1, "Name is required").max(200, "Name too long"),
-  input_data: z.string().optional(),
-});
+import {
+  listWorkflows,
+  listAgents,
+} from "@/features/tasks/server-fns";
+import type { Tool, ListToolsResult } from "@/features/tasks/types";
 
 interface CreateTaskDialogProps {
+  workspaceId: string;
   isCreating: boolean;
-  onCreate: (data: { type: "workflow" | "agent"; name: string; input_data?: Record<string, unknown> }) => Promise<void>;
+  onCreate: (data: {
+    type: "workflow" | "agent";
+    name: string;
+    input_data?: Record<string, unknown>;
+  }) => Promise<void>;
+}
+
+const SIMPLE_TYPES = ["string", "number", "integer", "boolean"];
+
+/** Resolve the effective type from a JSON Schema "type" field, which can be
+ *  a plain string ("string") or an array of strings (["string", "null"]). */
+function resolveType(schemaType: unknown): string | null {
+  if (typeof schemaType === "string") return schemaType;
+  if (Array.isArray(schemaType))
+    return schemaType.find((t) => SIMPLE_TYPES.includes(t)) ?? null;
+  return null;
+}
+
+/** Check if a schema has simple top-level properties suitable for individual inputs. */
+function isSimpleSchema(schema: Tool["inputSchema"]): boolean {
+  if (!schema.properties || typeof schema.properties !== "object") return false;
+  return Object.entries(schema.properties).every(
+    ([, val]) =>
+      val !== null &&
+      typeof val === "object" &&
+      "type" in val &&
+      resolveType((val as { type: unknown }).type) !== null,
+  );
+}
+
+/** Render a single input field based on a JSON schema property definition. */
+function SchemaField({
+  name,
+  schema,
+  value,
+  onChange,
+}: {
+  name: string;
+  schema: { type?: unknown; description?: string; default?: unknown };
+  value: unknown;
+  onChange: (val: unknown) => void;
+}) {
+  const type = resolveType(schema.type) || "string";
+  const description = schema.description;
+  const label = name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  if (type === "boolean") {
+    return (
+      <div className="flex items-center gap-3">
+        <input
+          id={name}
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => onChange(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300"
+        />
+        <Label htmlFor={name} className="!mt-0">
+          {label}
+          {description && (
+            <span className="ml-1 text-muted-foreground">— {description}</span>
+          )}
+        </Label>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={name}>
+        {label}
+        {description && (
+          <span className="ml-1 text-muted-foreground">— {description}</span>
+        )}
+      </Label>
+      <Input
+        id={name}
+        type={type === "number" || type === "integer" ? "number" : "text"}
+        step={type === "integer" ? "1" : undefined}
+        placeholder={schema.default !== undefined ? String(schema.default) : ""}
+        value={value === undefined || value === null ? "" : String(value)}
+        onChange={(e) => {
+          if (type === "number" || type === "integer") {
+            onChange(e.target.value === "" ? undefined : Number(e.target.value));
+          } else {
+            onChange(e.target.value || undefined);
+          }
+        }}
+      />
+    </div>
+  );
 }
 
 export default function CreateTaskDialog({
+  workspaceId,
   isCreating,
   onCreate,
 }: CreateTaskDialogProps) {
   const [open, setOpen] = useState(false);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [loadingTools, setLoadingTools] = useState(false);
+  const [selectedToolName, setSelectedToolName] = useState("");
+  const [inputValues, setInputValues] = useState<Record<string, unknown>>({});
+  const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
 
   const form = useForm({
-    validators: { onChange: createTaskSchema },
-    defaultValues: { type: "workflow" as const, name: "", input_data: "" },
+    defaultValues: {
+      type: "workflow" as "workflow" | "agent",
+      name: "" as string,
+      input_data: undefined as Record<string, unknown> | undefined,
+    },
     onSubmit: async ({ value }) => {
-      if (value.input_data && value.input_data.trim()) {
-        try {
-          JSON.parse(value.input_data);
-        } catch {
-          setJsonError("Invalid JSON");
-          return;
-        }
-      }
-
       try {
-        const parsed = value.input_data?.trim()
-          ? JSON.parse(value.input_data)
-          : undefined;
+        const selectedTool = tools.find((t) => t.name === value.name);
+        const useSimple = selectedTool ? isSimpleSchema(selectedTool.inputSchema) : false;
+        let inputData: Record<string, unknown> | undefined;
+        if (useSimple) {
+          inputData = Object.keys(inputValues).length > 0 ? inputValues : undefined;
+        } else if (jsonInput.trim()) {
+          try {
+            inputData = JSON.parse(jsonInput);
+          } catch {
+            setJsonError("Invalid JSON");
+            return;
+          }
+        }
         await onCreate({
           type: value.type,
           name: value.name,
-          input_data: parsed,
+          input_data: inputData,
         });
         toast.success("Task created");
         setOpen(false);
-        form.reset();
-        setJsonError(null);
       } catch (err) {
         toast.error("Failed to create task", {
           description: err instanceof Error ? err.message : "Unknown error",
@@ -75,15 +171,84 @@ export default function CreateTaskDialog({
     },
   });
 
+  const fetchTools = useCallback(
+    async (type: "workflow" | "agent") => {
+      setLoadingTools(true);
+      try {
+        const result: ListToolsResult =
+          type === "workflow"
+            ? await listWorkflows({ data: { workspaceId } })
+            : await listAgents({ data: { workspaceId } });
+        setTools(result.tools);
+      } catch {
+        setTools([]);
+        toast.error("Failed to load tools");
+      } finally {
+        setLoadingTools(false);
+      }
+    },
+    [workspaceId],
+  );
+
+  useEffect(() => {
+    if (open) {
+      fetchTools(form.state.values.type);
+    }
+  }, [open, form.state.values.type, fetchTools]);
+
+  const selectedTool = tools.find((t) => t.name === selectedToolName);
+  const hasSimpleSchema = selectedTool
+    ? isSimpleSchema(selectedTool.inputSchema)
+    : false;
+
+  const updateInputValue = (key: string, val: unknown) => {
+    setInputValues((prev) => {
+      const next = { ...prev };
+      if (val === undefined) delete next[key];
+      else next[key] = val;
+      return next;
+    });
+    form.setFieldValue("input_data", undefined); // keep in sync for submit
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      form.reset();
+      setTools([]);
+      setSelectedToolName("");
+      setInputValues({});
+      setJsonInput("");
+      setJsonError(null);
+    }
+  };
+
+  const handleTypeChange = (val: string) => {
+    form.setFieldValue("type", val as "workflow" | "agent");
+    form.setFieldValue("name", "");
+    form.setFieldValue("input_data", undefined);
+    setSelectedToolName("");
+    setInputValues({});
+    setJsonInput("");
+  };
+
+  const handleToolChange = (val: string) => {
+    form.setFieldValue("name", val);
+    form.setFieldValue("input_data", undefined);
+    setSelectedToolName(val);
+    setInputValues({});
+    setJsonInput("");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="mr-1 h-4 w-4" />
           New Task
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
           <DialogDescription>
@@ -97,15 +262,14 @@ export default function CreateTaskDialog({
           }}
           className="space-y-4"
         >
+          {/* Type selector */}
           <form.Field name="type">
             {(field) => (
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select
                   value={field.state.value}
-                  onValueChange={(val) =>
-                    field.handleChange(val as "workflow" | "agent")
-                  }
+                  onValueChange={handleTypeChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
@@ -118,42 +282,81 @@ export default function CreateTaskDialog({
               </div>
             )}
           </form.Field>
+
+          {/* Tool name selector */}
           <form.Field name="name">
             {(field) => (
               <div className="space-y-2">
-                <Label htmlFor={field.name}>Name</Label>
-                <Input
-                  id={field.name}
-                  placeholder="my-task"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    {typeof field.state.meta.errors[0] === "string"
-                      ? field.state.meta.errors[0]
-                      : (field.state.meta.errors[0] as { message?: string })?.message || "Validation error"}
+                <Label>Tool</Label>
+                {loadingTools ? (
+                  <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading tools...
+                  </div>
+                ) : (
+                  <Select
+                    value={field.state.value}
+                    onValueChange={handleToolChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a tool" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tools.map((tool) => (
+                        <SelectItem key={tool.name} value={tool.name}>
+                          {tool.annotations?.title || tool.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {selectedTool?.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTool.description}
                   </p>
                 )}
               </div>
             )}
           </form.Field>
-          <form.Field name="input_data">
-            {(field) => (
+
+          {/* Dynamic inputs from tool schema */}
+          {selectedTool && hasSimpleSchema && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Parameters</Label>
+              {Object.entries(selectedTool.inputSchema.properties ?? {}).map(
+                ([key, propSchema]) => (
+                  <SchemaField
+                    key={key}
+                    name={key}
+                    schema={propSchema as {
+                      type?: string;
+                      description?: string;
+                      default?: unknown;
+                    }}
+                    value={inputValues[key]}
+                    onChange={(val) => updateInputValue(key, val)}
+                  />
+                ),
+              )}
+            </div>
+          )}
+
+          {/* Fallback: raw JSON textarea for complex schemas */}
+          {selectedTool &&
+            !hasSimpleSchema &&
+            selectedTool.inputSchema.properties &&
+            Object.keys(selectedTool.inputSchema.properties).length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor={field.name}>
+                <Label className="text-sm font-medium">
                   Input Data (JSON, optional)
                 </Label>
                 <Textarea
-                  id={field.name}
                   placeholder='{"key": "value"}'
                   rows={4}
                   className="font-mono text-sm"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
+                  value={jsonInput}
                   onChange={(e) => {
-                    field.handleChange(e.target.value);
+                    setJsonInput(e.target.value);
                     setJsonError(null);
                   }}
                 />
@@ -162,21 +365,25 @@ export default function CreateTaskDialog({
                 )}
               </div>
             )}
-          </form.Field>
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
+          </form>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating}>
-              Create
-            </Button>
+            <form.Field name="name">
+              {(field) => (
+                <Button
+                  type="submit"
+                  disabled={isCreating || !field.state.value || loadingTools}
+                  onClick={() => form.handleSubmit()}
+                >
+                  {isCreating ? "Creating..." : "Create"}
+                </Button>
+              )}
+            </form.Field>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
   );
 }

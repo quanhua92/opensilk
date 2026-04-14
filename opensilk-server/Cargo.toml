@@ -19,3 +19,5 @@ tower-http = { version = "0.6", features = ["cors"] }
 dotenvy = "0.15"
 thiserror = "2"
 fred = { version = "10", features = ["i-keys", "i-streams", "enable-rustls"], default-features = false }
+rmcp = { version = "1.4", default-features = false, features = ["server"] }
+schemars = "1.2"
