@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getTask, cancelTask as cancelTaskFn } from "@/features/tasks/server-fns";
+import { TASK_POLL_INTERVAL_MS } from "@/features/tasks/constants";
 import TaskDetail from "@/features/tasks/components/task-detail";
 import { toast } from "sonner";
 
@@ -22,6 +23,21 @@ function TaskDetailPage() {
   const { task } = Route.useLoaderData();
   const [currentTask, setCurrentTask] = useState(task);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const isActive = currentTask.status === "pending" || currentTask.status === "running";
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const interval = setInterval(async () => {
+      const updated = await getTask({
+        data: { workspaceId, taskId },
+      });
+      setCurrentTask(updated);
+    }, TASK_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isActive, workspaceId, taskId]);
 
   const handleCancel = async () => {
     setIsCancelling(true);

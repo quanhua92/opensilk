@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getTasks, createTask as createTaskFn } from "@/features/tasks/server-fns";
+import { TASK_POLL_INTERVAL_MS } from "@/features/tasks/constants";
 import TaskList from "@/features/tasks/components/task-list";
 import CreateTaskDialog from "@/features/tasks/components/create-task-dialog";
 import OverviewStats from "@/features/tasks/components/overview-stats";
@@ -19,6 +20,21 @@ function WorkspaceDetailPage() {
   const { initialTasks } = Route.useLoaderData();
   const [tasks, setTasks] = useState(initialTasks);
   const [isCreating, setIsCreating] = useState(false);
+
+  const hasActiveTasks = tasks.some(
+    (t) => t.status === "pending" || t.status === "running",
+  );
+
+  useEffect(() => {
+    if (!hasActiveTasks) return;
+
+    const interval = setInterval(async () => {
+      const refreshed = await getTasks({ data: { workspaceId } });
+      setTasks(refreshed);
+    }, TASK_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [hasActiveTasks, workspaceId]);
 
   const handleCreateTask = async (data: {
     type: "workflow" | "agent";
