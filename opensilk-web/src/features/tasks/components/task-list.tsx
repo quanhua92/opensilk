@@ -40,7 +40,15 @@ export default function TaskList({ tasks, workspaceId }: TaskListProps) {
         </TableHeader>
         <TableBody>
           {tasks.map((task) => (
-            <TableRow key={task.id}>
+            <TableRow
+              key={task.id}
+              className="cursor-pointer"
+              onClick={() =>
+                navigate({
+                  to: `/workspaces/${workspaceId}/tasks/${task.id}`,
+                })
+              }
+            >
               <TableCell className="font-medium">{task.name}</TableCell>
               <TableCell>
                 <Badge variant="outline">{task.type}</Badge>
@@ -58,11 +66,12 @@ export default function TaskList({ tasks, workspaceId }: TaskListProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
+                  onClick={(e) => {
+                    e.stopPropagation();
                     navigate({
                       to: `/workspaces/${workspaceId}/tasks/${task.id}`,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
