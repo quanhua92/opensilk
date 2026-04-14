@@ -1,0 +1,222 @@
+# opensilk-server API Reference
+
+Base URL: `http://localhost:8080`
+
+## Authentication
+
+All authenticated endpoints accept a valid JWT via **either** method (Authorization header takes priority when both are present):
+
+**Option 1 — Bearer token** (for API/mobile clients):
+```
+Authorization: Bearer <jwt>
+```
+
+**Option 2 — HttpOnly cookie** (for browser clients):
+```
+Cookie: access_token=<jwt>
+```
+
+The cookie is set automatically on successful login.
+
+| Property | Value |
+|---|---|
+| Cookie name | `access_token` |
+| Flags | `HttpOnly`, `SameSite=Lax`, `Path=/` |
+| Max-Age | 86400 (24 hours) |
+
+Browser clients can rely on cookies being sent automatically. Non-browser clients (API scripts, mobile apps) should use the `Authorization: Bearer <token>` header instead.
+
+## Error Format
+
+All errors return a JSON body:
+
+```json
+{
+  "error": <status_code>,
+  "message": "<description>"
+}
+```
+
+| Status | Meaning |
+|---|---|
+| 401 | Authentication failed or missing |
+| 404 | Resource not found |
+| 409 | Conflict (e.g. duplicate email) |
+| 500 | Internal server error |
+
+---
+
+## Endpoints
+
+### GET /health
+
+Database health check. No authentication required.
+
+**Response:** `200 OK` (empty body)
+
+---
+
+### POST /auth/register
+
+Create a new user account.
+
+**Request body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "secret123",
+  "full_name": "John Doe"
+}
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `email` | string | yes | Non-empty, must be unique |
+| `password` | string | yes | Minimum 8 characters |
+| `full_name` | string | no | Display name |
+
+**Response:** `201 Created`
+```json
+{
+  "id": "019d8a61-86fa-7875-a4db-b6ad3435a49c",
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "created_at": "2026-04-14T05:00:00Z"
+}
+```
+
+**Error responses:**
+- `401` — Email empty or password too short
+- `409` — Email already registered
+
+---
+
+### POST /auth/login
+
+Authenticate and receive a session cookie.
+
+**Request body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "secret123"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "019d8a61-86fa-7875-a4db-b6ad3435a49c",
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "created_at": "2026-04-14T05:00:00Z"
+}
+```
+
+**Headers:**
+```
+Set-Cookie: access_token=<jwt>; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400
+```
+
+**Error responses:**
+- `401` — Invalid email or password
+
+---
+
+### POST /auth/logout
+
+Clear the session cookie. No authentication required.
+
+**Response:** `200 OK`
+```json
+{
+  "message": "logged out"
+}
+```
+
+**Headers:**
+```
+Set-Cookie: access_token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+```
+
+---
+
+### POST /workspaces
+
+Create a new workspace. **Requires authentication.**
+
+**Request body:**
+```json
+{
+  "name": "My Workspace"
+}
+```
+
+| Field | Type | Required |
+|---|---|---|
+| `name` | string | yes |
+
+**Response:** `201 Created`
+```json
+{
+  "id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+  "name": "My Workspace",
+  "owner_id": "019d8a61-86fa-7875-a4db-b6ad3435a49c",
+  "created_at": "2026-04-14T05:01:00Z",
+  "updated_at": "2026-04-14T05:01:00Z"
+}
+```
+
+**Error responses:**
+- `401` — Not authenticated
+
+---
+
+### GET /workspaces
+
+List all workspaces owned by the authenticated user. **Requires authentication.**
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+    "name": "My Workspace",
+    "owner_id": "019d8a61-86fa-7875-a4db-b6ad3435a49c",
+    "created_at": "2026-04-14T05:01:00Z",
+    "updated_at": "2026-04-14T05:01:00Z"
+  }
+]
+```
+
+Returns an empty array `[]` if the user has no workspaces.
+
+**Error responses:**
+- `401` — Not authenticated
+
+---
+
+### GET /workspaces/{id}
+
+Get a single workspace by ID. Only returns the workspace if it is owned by the authenticated user. **Requires authentication.**
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID |
+
+**Response:** `200 OK`
+```json
+{
+  "id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+  "name": "My Workspace",
+  "owner_id": "019d8a61-86fa-7875-a4db-b6ad3435a49c",
+  "created_at": "2026-04-14T05:01:00Z",
+  "updated_at": "2026-04-14T05:01:00Z"
+}
+```
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found or not owned by user
