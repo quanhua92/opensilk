@@ -87,6 +87,7 @@ async fn main() {
             Router::new()
                 .route("/tasks", get(tasks::worker_handlers::list_all).patch(tasks::worker_handlers::update_task))
                 .route("/tasks/{task_id}", patch(tasks::worker_handlers::update_task))
+                .route("/tasks/{task_id}/context", get(tasks::worker_handlers::get_task_context))
                 .route_layer(axum::middleware::from_fn_with_state(state.clone(), worker_auth))
                 .with_state(state.clone()),
         )
