@@ -5,7 +5,7 @@ CREATE TABLE agents (
     slug TEXT NOT NULL,
     persona TEXT NOT NULL DEFAULT '',
     avatar_url TEXT,
-    enabled_tools TEXT[] NOT NULL DEFAULT '{}',
+    enabled_tools JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(workspace_id, slug)

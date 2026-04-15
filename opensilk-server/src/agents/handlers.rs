@@ -19,7 +19,7 @@ pub struct AgentResponse {
     pub slug: String,
     pub persona: String,
     pub avatar_url: Option<String>,
-    pub enabled_tools: Vec<String>,
+    pub enabled_tools: serde_json::Value,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -32,7 +32,7 @@ pub struct CreateAgentRequest {
     pub slug: String,
     pub persona: Option<String>,
     pub avatar_url: Option<String>,
-    pub enabled_tools: Option<Vec<String>>,
+    pub enabled_tools: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -40,7 +40,7 @@ pub struct UpdateAgentRequest {
     pub name: Option<String>,
     pub persona: Option<String>,
     pub avatar_url: Option<String>,
-    pub enabled_tools: Option<Vec<String>>,
+    pub enabled_tools: Option<serde_json::Value>,
 }
 
 // --- Helper: verify workspace ownership ---
@@ -76,6 +76,8 @@ pub async fn create(
     let user_id = user.require_user_id()?;
     verify_workspace_ownership(&state.pool, workspace_id, user_id).await?;
 
+    let tools = req.enabled_tools.unwrap_or(serde_json::json!([]));
+
     let row = sqlx::query_as!(
         AgentResponse,
         r#"INSERT INTO agents (workspace_id, name, slug, persona, avatar_url, enabled_tools)
@@ -86,7 +88,7 @@ pub async fn create(
         req.slug,
         req.persona.as_deref().unwrap_or(""),
         req.avatar_url,
-        req.enabled_tools.as_deref().unwrap_or(&[]),
+        tools,
     )
     .fetch_one(&state.pool)
     .await
