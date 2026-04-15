@@ -1,5 +1,5 @@
-import { Link, useRouter } from "@tanstack/react-router";
-import { LogOut, FolderOpen } from "lucide-react";
+import { Link, useRouter, useMatches } from "@tanstack/react-router";
+import { LogOut, FolderOpen, Bot, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,8 +34,18 @@ function getUserInitials(user: User): string {
   return user.email.slice(0, 2).toUpperCase();
 }
 
+function useWorkspaceId(): string | null {
+  const matches = useMatches();
+  const wsMatch = matches.find(
+    (m) => m.params && "workspaceId" in m.params,
+  );
+  if (!wsMatch?.params) return null;
+  return String(wsMatch.params.workspaceId) || null;
+}
+
 export function AppSidebar({ user }: { user: User }) {
   const router = useRouter();
+  const workspaceId = useWorkspaceId();
 
   const handleLogout = async () => {
     await logout({});
@@ -77,6 +86,43 @@ export function AppSidebar({ user }: { user: User }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {workspaceId && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/workspaces/$workspaceId"
+                        params={{ workspaceId }}
+                      >
+                        <LayoutDashboard />
+                        <span>Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/workspaces/$workspaceId/agents"
+                        params={{ workspaceId }}
+                      >
+                        <Bot />
+                        <span>Agents</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/workspaces/$workspaceId/boards"
+                        params={{ workspaceId }}
+                      >
+                        <LayoutDashboard />
+                        <span>Boards</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -69,4 +69,6 @@ export const proxy = {
       { method: "PATCH", body: body ? JSON.stringify(body) : undefined },
       cookie,
     ),
+  delete: <T>(path: string, cookie?: string) =>
+    proxyRequest<T>(path, { method: "DELETE" }, cookie),
 };

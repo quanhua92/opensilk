@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Bot, LayoutDashboard } from "lucide-react";
 import { getTasks, createTask as createTaskFn } from "@/features/tasks/server-fns";
 import { TASK_POLL_INTERVAL_MS } from "@/features/tasks/constants";
 import TaskList from "@/features/tasks/components/task-list";
@@ -63,6 +64,32 @@ function WorkspaceDetailPage() {
       </div>
 
       <OverviewStats tasks={tasks} />
+
+      {/* Quick links */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          to="/workspaces/$workspaceId/agents"
+          params={{ workspaceId }}
+          className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
+        >
+          <Bot className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <p className="font-medium">Agents</p>
+            <p className="text-muted-foreground text-sm">Manage AI agent personas</p>
+          </div>
+        </Link>
+        <Link
+          to="/workspaces/$workspaceId/boards"
+          params={{ workspaceId }}
+          className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
+        >
+          <LayoutDashboard className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <p className="font-medium">Boards</p>
+            <p className="text-muted-foreground text-sm">Kanban boards with cards</p>
+          </div>
+        </Link>
+      </div>
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">Tasks</h2>

@@ -22,6 +22,8 @@ export interface Task {
   input_data: Record<string, unknown> | null;
   output_data: Record<string, unknown> | null;
   error_log: string | null;
+  card_id: string | null;
+  agent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,4 +32,6 @@ export interface CreateTaskRequest {
   type: TaskType;
   name: string;
   input_data?: Record<string, unknown>;
+  card_id?: string;
+  agent_id?: string;
 }
