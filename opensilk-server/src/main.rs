@@ -1,5 +1,6 @@
 mod agents;
 mod auth;
+mod boards;
 mod db;
 mod error;
 mod state;
