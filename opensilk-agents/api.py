@@ -85,6 +85,24 @@ class HubClient:
         except Exception as e:
             logger.warning("Heartbeat failed for task %s: %s", task_id, e)
 
+    async def get_task_context(self, task_id: str) -> dict | None:
+        """Get agent-scoped context (JWT + metadata) for a task.
+
+        Returns dict with: token, agent_id, agent_name, agent_persona,
+        workspace_id, board_id, card_id, card_title.
+        Returns None if task has no agent or card linked.
+        """
+        try:
+            resp = await self._request(
+                "GET",
+                f"/worker/tasks/{task_id}/context",
+            )
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return None
+            raise
+
 
 def create_client() -> HubClient:
     hub_url = os.environ.get("HUB_URL", "http://localhost:8080")

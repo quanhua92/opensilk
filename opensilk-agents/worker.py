@@ -20,12 +20,26 @@ async def run_task(client: HubClient, task: dict) -> str:
     heartbeat = Heartbeat(client, task_id)
     await heartbeat.start()
 
+    # Fetch agent context if the task has agent_id / card_id
+    context = None
+    if task.get("agent_id") and task.get("card_id"):
+        try:
+            context = await client.get_task_context(task_id)
+            if context:
+                logger.info(
+                    "Task %s context: agent=%s card=%s",
+                    task_id, context.get("agent_name"), context.get("card_title"),
+                )
+        except Exception as e:
+            logger.warning("Failed to fetch context for task %s: %s", task_id, e)
+
     try:
         output = await dispatch(
             task["type"],
             task["name"],
             task_id,
             task.get("input_data"),
+            context,
         )
         await client.complete_task(task_id, output)
         logger.info("Task %s completed successfully", task_id)

@@ -11,10 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
 import { getComments, createComment, getCard, updateCard } from "../server-fns";
 import { PRIORITY_CONFIG, COLUMN_LABELS } from "../types";
 import type { Card, CardComment, CardStatus } from "../types";
+import CreateTaskDialog from "@/features/tasks/components/create-task-dialog";
+import { createTask as createTaskFn } from "@/features/tasks/server-fns";
 
 interface CardDetailDialogProps {
   cardId: string;
@@ -50,6 +52,8 @@ export default function CardDetailDialog({
   const [isLoading, setIsLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
+  const [showExecuteDialog, setShowExecuteDialog] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -99,6 +103,32 @@ export default function CardDetailDialog({
       toast.error("Failed to move card");
     } finally {
       setIsMoving(false);
+    }
+  };
+
+  const handleExecute = async (data: {
+    type: "workflow" | "agentic";
+    name: string;
+    input_data?: Record<string, unknown>;
+  }) => {
+    setIsCreatingTask(true);
+    try {
+      await createTaskFn({
+        data: {
+          workspaceId,
+          ...data,
+          card_id: cardId,
+        },
+      });
+      toast.success("Task created and linked to card");
+      setShowExecuteDialog(false);
+      await onRefresh();
+    } catch (err) {
+      toast.error("Failed to create task", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsCreatingTask(false);
     }
   };
 
@@ -153,6 +183,16 @@ export default function CardDetailDialog({
                 </Button>
               ))}
             </div>
+
+            {/* Execute button — creates a task linked to this card */}
+            <Button
+              size="sm"
+              onClick={() => setShowExecuteDialog(true)}
+              className="w-full"
+            >
+              <Play className="mr-1 h-4 w-4" />
+              Execute as Task
+            </Button>
 
             {/* Description */}
             {card.description && (
@@ -234,6 +274,14 @@ export default function CardDetailDialog({
             </div>
           </div>
         ) : null}
+
+        {showExecuteDialog && (
+          <CreateTaskDialog
+            workspaceId={workspaceId}
+            isCreating={isCreatingTask}
+            onCreate={handleExecute}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
