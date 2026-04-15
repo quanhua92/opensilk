@@ -57,7 +57,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 FROM alpine:3.23.3 AS final
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates curl
+RUN apk add --no-cache ca-certificates
 
 RUN addgroup -S appgroup && adduser -S -G appgroup appuser
 
@@ -72,6 +72,6 @@ USER appuser
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+    CMD wget -q --spider http://localhost:${PORT:-8080}/health || exit 1
 
 CMD ["./opensilk-server"]
