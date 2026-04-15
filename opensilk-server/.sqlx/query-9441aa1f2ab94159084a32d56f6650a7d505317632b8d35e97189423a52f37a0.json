@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO cards (board_id, workspace_id, title, description, status, assigned_agent_id, priority, context_summary)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n        RETURNING id, board_id, workspace_id, title, description, status, assigned_agent_id, priority, context_summary, position, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "board_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "workspace_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "assigned_agent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "context_summary",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "position",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9441aa1f2ab94159084a32d56f6650a7d505317632b8d35e97189423a52f37a0"
+}

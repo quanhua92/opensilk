@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, workspace_id, type AS \"task_type\", name, status,\n                          retry_count, max_retries, last_heartbeat_at,\n                          input_data, output_data, error_log, created_at, updated_at\n                   FROM tasks\n                   WHERE workspace_id = $1 AND status = $2\n                   ORDER BY created_at DESC",
+  "query": "SELECT id, workspace_id, type AS \"task_type\", name, status,\n                          retry_count, max_retries, last_heartbeat_at,\n                          input_data, output_data, error_log, card_id, agent_id,\n                          created_at, updated_at\n                   FROM tasks\n                   WHERE workspace_id = $1 AND status = $2\n                   ORDER BY created_at DESC",
   "describe": {
     "columns": [
       {
@@ -60,11 +60,21 @@
       },
       {
         "ordinal": 11,
+        "name": "card_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "agent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -87,9 +97,11 @@
       true,
       true,
       true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "9eb2dc3042d1d92b0884c0506057d8d72bc4655c4562ada2531aa60af8745620"
+  "hash": "37b88543e19730286bb402248569828c41dce504b3483dfb2ad180da3994c5e2"
 }

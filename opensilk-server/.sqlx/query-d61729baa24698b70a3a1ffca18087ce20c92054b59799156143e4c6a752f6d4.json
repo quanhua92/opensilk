@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, workspace_id, type AS \"task_type\", name, status,\n                  retry_count, max_retries, last_heartbeat_at,\n                  input_data, output_data, error_log, created_at, updated_at\n           FROM tasks\n           WHERE id = $1 AND workspace_id = $2",
+  "query": "SELECT id, board_id, workspace_id, title, description, status, assigned_agent_id, priority, context_summary, position, created_at, updated_at\n           FROM cards WHERE id = $1 AND board_id = $2",
   "describe": {
     "columns": [
       {
@@ -10,61 +10,56 @@
       },
       {
         "ordinal": 1,
-        "name": "workspace_id",
+        "name": "board_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 2,
-        "name": "task_type",
-        "type_info": "Text"
+        "name": "workspace_id",
+        "type_info": "Uuid"
       },
       {
         "ordinal": 3,
-        "name": "name",
+        "name": "title",
         "type_info": "Text"
       },
       {
         "ordinal": 4,
-        "name": "status",
+        "name": "description",
         "type_info": "Text"
       },
       {
         "ordinal": 5,
-        "name": "retry_count",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 6,
-        "name": "max_retries",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 7,
-        "name": "last_heartbeat_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 8,
-        "name": "input_data",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 9,
-        "name": "output_data",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 10,
-        "name": "error_log",
+        "name": "status",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 6,
+        "name": "assigned_agent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "context_summary",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "position",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -80,16 +75,15 @@
       false,
       false,
       false,
-      false,
-      false,
-      false,
+      true,
       false,
       true,
+      false,
       true,
-      true,
+      false,
       false,
       false
     ]
   },
-  "hash": "1ff1676aa2672e7cd9a69b4f9e94e2ba5c72d354bba6fb7b1bb6ddfe6751162e"
+  "hash": "d61729baa24698b70a3a1ffca18087ce20c92054b59799156143e4c6a752f6d4"
 }

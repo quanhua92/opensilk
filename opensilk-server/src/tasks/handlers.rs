@@ -28,6 +28,8 @@ pub struct TaskResponse {
     pub input_data: Option<serde_json::Value>,
     pub output_data: Option<serde_json::Value>,
     pub error_log: Option<String>,
+    pub card_id: Option<Uuid>,
+    pub agent_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -40,6 +42,8 @@ pub struct CreateTaskRequest {
     pub task_type: String,
     pub name: String,
     pub input_data: Option<serde_json::Value>,
+    pub card_id: Option<Uuid>,
+    pub agent_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -158,15 +162,18 @@ pub async fn create(
 
     let row = sqlx::query_as!(
         TaskResponse,
-        r#"INSERT INTO tasks (workspace_id, type, name, input_data)
-        VALUES ($1, $2, $3, $4)
+        r#"INSERT INTO tasks (workspace_id, type, name, input_data, card_id, agent_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, workspace_id, type AS "task_type", name, status,
                   retry_count, max_retries, last_heartbeat_at,
-                  input_data, output_data, error_log, created_at, updated_at"#,
+                  input_data, output_data, error_log, card_id, agent_id,
+                  created_at, updated_at"#,
         workspace_id,
         req.task_type,
         req.name,
         req.input_data,
+        req.card_id,
+        req.agent_id,
     )
     .fetch_one(&state.pool)
     .await?;
@@ -201,7 +208,8 @@ pub async fn list(
                 TaskResponse,
                 r#"SELECT id, workspace_id, type AS "task_type", name, status,
                           retry_count, max_retries, last_heartbeat_at,
-                          input_data, output_data, error_log, created_at, updated_at
+                          input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at
                    FROM tasks
                    WHERE workspace_id = $1 AND status = $2
                    ORDER BY created_at DESC"#,
@@ -216,7 +224,8 @@ pub async fn list(
                 TaskResponse,
                 r#"SELECT id, workspace_id, type AS "task_type", name, status,
                           retry_count, max_retries, last_heartbeat_at,
-                          input_data, output_data, error_log, created_at, updated_at
+                          input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at
                    FROM tasks
                    WHERE workspace_id = $1
                    ORDER BY created_at DESC"#,
@@ -241,7 +250,8 @@ pub async fn get(
         TaskResponse,
         r#"SELECT id, workspace_id, type AS "task_type", name, status,
                   retry_count, max_retries, last_heartbeat_at,
-                  input_data, output_data, error_log, created_at, updated_at
+                  input_data, output_data, error_log, card_id, agent_id,
+                  created_at, updated_at
            FROM tasks
            WHERE id = $1 AND workspace_id = $2"#,
         task_id,
@@ -289,7 +299,8 @@ pub async fn update(
                    WHERE id = $1 AND workspace_id = $2
                    RETURNING id, workspace_id, type AS "task_type", name, status,
                              retry_count, max_retries, last_heartbeat_at,
-                             input_data, output_data, error_log, created_at, updated_at"#,
+                             input_data, output_data, error_log, card_id, agent_id,
+                             created_at, updated_at"#,
                 task_id,
                 workspace_id,
                 req.error_log,
@@ -312,7 +323,8 @@ pub async fn update(
                    WHERE id = $1 AND workspace_id = $2
                    RETURNING id, workspace_id, type AS "task_type", name, status,
                              retry_count, max_retries, last_heartbeat_at,
-                             input_data, output_data, error_log, created_at, updated_at"#,
+                             input_data, output_data, error_log, card_id, agent_id,
+                             created_at, updated_at"#,
                 task_id,
                 workspace_id,
                 req.error_log,
@@ -337,7 +349,8 @@ pub async fn update(
            WHERE id = $1 AND workspace_id = $2
            RETURNING id, workspace_id, type AS "task_type", name, status,
                      retry_count, max_retries, last_heartbeat_at,
-                     input_data, output_data, error_log, created_at, updated_at"#,
+                     input_data, output_data, error_log, card_id, agent_id,
+                     created_at, updated_at"#,
         task_id,
         workspace_id,
         req.status,
@@ -365,7 +378,8 @@ pub async fn cancel(
            WHERE id = $1 AND workspace_id = $2 AND status IN ('pending', 'running')
            RETURNING id, workspace_id, type AS "task_type", name, status,
                      retry_count, max_retries, last_heartbeat_at,
-                     input_data, output_data, error_log, created_at, updated_at"#,
+                     input_data, output_data, error_log, card_id, agent_id,
+                     created_at, updated_at"#,
         task_id,
         workspace_id,
     )

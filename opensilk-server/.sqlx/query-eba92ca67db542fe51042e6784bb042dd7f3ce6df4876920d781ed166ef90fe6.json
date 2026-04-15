@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE tasks\n           SET status = COALESCE($2, status),\n               output_data = COALESCE($3, output_data),\n               error_log = COALESCE($4, error_log),\n               last_heartbeat_at = CASE WHEN $2 IS NOT NULL THEN NOW() ELSE last_heartbeat_at END,\n               updated_at = NOW()\n           WHERE id = $1\n           RETURNING id, workspace_id, type AS \"task_type\", name, status,\n                     retry_count, max_retries, last_heartbeat_at,\n                     input_data, output_data, error_log, created_at, updated_at",
+  "query": "UPDATE tasks\n                   SET status = 'pending',\n                       retry_count = retry_count + 1,\n                       error_log = COALESCE($3, error_log),\n                       last_heartbeat_at = NOW(),\n                       updated_at = NOW()\n                   WHERE id = $1 AND workspace_id = $2\n                   RETURNING id, workspace_id, type AS \"task_type\", name, status,\n                             retry_count, max_retries, last_heartbeat_at,\n                             input_data, output_data, error_log, card_id, agent_id,\n                             created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -60,11 +60,21 @@
       },
       {
         "ordinal": 11,
+        "name": "card_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "agent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -72,8 +82,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Text",
-        "Jsonb",
+        "Uuid",
         "Text"
       ]
     },
@@ -89,9 +98,11 @@
       true,
       true,
       true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "cd0f0f259d3b0105b6efcb236b57d2d943e927d2f9477b7d68ff3cbf035a018f"
+  "hash": "eba92ca67db542fe51042e6784bb042dd7f3ce6df4876920d781ed166ef90fe6"
 }

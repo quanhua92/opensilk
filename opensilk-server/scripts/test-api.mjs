@@ -316,6 +316,79 @@ async function run() {
     assert(delAgent.status === 200, `returns 200`);
     console.log();
 
+    // --- Board Tests ---
+    console.log('POST /workspaces/{ws}/boards');
+    const createBoard = await fetchJSON(`/workspaces/${workspaceId}/boards`, {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Test Board', description: 'Kanban board' }),
+    });
+    assert(createBoard.status === 201, `returns 201`);
+    assert(createBoard.data?.id != null, `has id`);
+    let boardId = createBoard.data?.id;
+
+    console.log('GET /workspaces/{ws}/boards');
+    const listBoards = await fetchJSON(`/workspaces/${workspaceId}/boards`);
+    assert(listBoards.status === 200, `returns 200`);
+    assert(Array.isArray(listBoards.data), `returns array`);
+
+    console.log('GET /workspaces/{ws}/boards/{id}');
+    const getBoard = await fetchJSON(`/workspaces/${workspaceId}/boards/${boardId}`);
+    assert(getBoard.status === 200, `returns 200`);
+    assert(getBoard.data?.id === boardId, `id matches`);
+
+    // --- Card Tests ---
+    console.log('POST /workspaces/{ws}/boards/{id}/cards');
+    const createCard = await fetchJSON(`/workspaces/${workspaceId}/boards/${boardId}/cards`, {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Test Card', priority: 'high' }),
+    });
+    assert(createCard.status === 201, `returns 201`);
+    let cardId = createCard.data?.id;
+    assert(createCard.data?.status === 'inbox', `default status is inbox`);
+
+    console.log('GET /workspaces/{ws}/boards/{id}/cards');
+    const listCards = await fetchJSON(`/workspaces/${workspaceId}/boards/${boardId}/cards`);
+    assert(listCards.status === 200, `returns 200`);
+    assert(Array.isArray(listCards.data), `returns array`);
+
+    console.log('PATCH /workspaces/{ws}/boards/{id}/cards/{id} (status move)');
+    const moveCard = await fetchJSON(`/workspaces/${workspaceId}/boards/${boardId}/cards/${cardId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'in_progress' }),
+    });
+    assert(moveCard.status === 200, `returns 200`);
+    assert(moveCard.data?.status === 'in_progress', `status updated`);
+
+    // --- Comment Tests ---
+    console.log('POST /workspaces/{ws}/boards/{id}/cards/{id}/comments');
+    const createComment = await fetchJSON(
+        `/workspaces/${workspaceId}/boards/${boardId}/cards/${cardId}/comments`,
+        { method: 'POST', body: JSON.stringify({ content: 'Test comment from user' }) },
+    );
+    assert(createComment.status === 201, `returns 201`);
+    assert(createComment.data?.author_type === 'user', `author_type is user`);
+
+    console.log('GET /workspaces/{ws}/boards/{id}/cards/{id}/comments');
+    const listComments = await fetchJSON(
+        `/workspaces/${workspaceId}/boards/${boardId}/cards/${cardId}/comments`,
+    );
+    assert(listComments.status === 200, `returns 200`);
+    assert(listComments.data?.length >= 1, `has at least 1 comment`);
+
+    // --- Card-task linking test ---
+    console.log('POST /workspaces/{ws}/tasks (with card_id)');
+    const taskWithCard = await fetchJSON(`/workspaces/${workspaceId}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: 'workflow',
+            name: 'hello_agents',
+            card_id: cardId,
+        }),
+    });
+    assert(taskWithCard.status === 201, `returns 201`);
+    assert(taskWithCard.data?.card_id === cardId, `card_id linked`);
+    console.log();
+
     // Summary
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exit(failed > 0 ? 1 : 0);

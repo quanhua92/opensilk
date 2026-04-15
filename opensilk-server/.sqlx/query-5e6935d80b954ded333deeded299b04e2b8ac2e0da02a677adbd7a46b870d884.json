@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO tasks (workspace_id, type, name, input_data)\n        VALUES ($1, $2, $3, $4)\n        RETURNING id, workspace_id, type AS \"task_type\", name, status,\n                  retry_count, max_retries, last_heartbeat_at,\n                  input_data, output_data, error_log, created_at, updated_at",
+  "query": "SELECT id, workspace_id, type AS \"task_type\", name, status,\n                          retry_count, max_retries, last_heartbeat_at,\n                          input_data, output_data, error_log, card_id, agent_id,\n                          created_at, updated_at\n                   FROM tasks\n                   ORDER BY created_at DESC\n                   LIMIT 100",
   "describe": {
     "columns": [
       {
@@ -60,22 +60,27 @@
       },
       {
         "ordinal": 11,
+        "name": "card_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "agent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid",
-        "Text",
-        "Text",
-        "Jsonb"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -89,9 +94,11 @@
       true,
       true,
       true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "9fa0fde1de0cac2582065f2e940292c7be3bdd7627616f722e44c043b8b0f7cf"
+  "hash": "5e6935d80b954ded333deeded299b04e2b8ac2e0da02a677adbd7a46b870d884"
 }

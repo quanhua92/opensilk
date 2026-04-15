@@ -19,7 +19,8 @@ pub async fn list_all(
                 TaskResponse,
                 r#"SELECT id, workspace_id, type AS "task_type", name, status,
                           retry_count, max_retries, last_heartbeat_at,
-                          input_data, output_data, error_log, created_at, updated_at
+                          input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at
                    FROM tasks
                    WHERE status = $1
                    ORDER BY created_at DESC
@@ -34,7 +35,8 @@ pub async fn list_all(
                 TaskResponse,
                 r#"SELECT id, workspace_id, type AS "task_type", name, status,
                           retry_count, max_retries, last_heartbeat_at,
-                          input_data, output_data, error_log, created_at, updated_at
+                          input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at
                    FROM tasks
                    ORDER BY created_at DESC
                    LIMIT 100"#,
@@ -77,7 +79,8 @@ pub async fn update_task(
                    WHERE id = $1
                    RETURNING id, workspace_id, type AS "task_type", name, status,
                              retry_count, max_retries, last_heartbeat_at,
-                             input_data, output_data, error_log, created_at, updated_at"#,
+                             input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at"#,
                 task_id,
                 req.error_log,
             )
@@ -98,7 +101,8 @@ pub async fn update_task(
                    WHERE id = $1
                    RETURNING id, workspace_id, type AS "task_type", name, status,
                              retry_count, max_retries, last_heartbeat_at,
-                             input_data, output_data, error_log, created_at, updated_at"#,
+                             input_data, output_data, error_log, card_id, agent_id,
+                          created_at, updated_at"#,
                 task_id,
                 req.error_log,
             )
@@ -121,7 +125,8 @@ pub async fn update_task(
                WHERE id = $1 AND status = 'pending'
                RETURNING id, workspace_id, type AS "task_type", name, status,
                          retry_count, max_retries, last_heartbeat_at,
-                         input_data, output_data, error_log, created_at, updated_at"#,
+                         input_data, output_data, error_log, card_id, agent_id,
+                         created_at, updated_at"#,
             task_id,
         )
         .fetch_optional(&state.pool)
@@ -143,7 +148,8 @@ pub async fn update_task(
            WHERE id = $1
            RETURNING id, workspace_id, type AS "task_type", name, status,
                      retry_count, max_retries, last_heartbeat_at,
-                     input_data, output_data, error_log, created_at, updated_at"#,
+                     input_data, output_data, error_log, card_id, agent_id,
+                     created_at, updated_at"#,
         task_id,
         req.status,
         req.output_data,
