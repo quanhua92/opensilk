@@ -1,5 +1,5 @@
 import { Link, useRouter, useMatches } from "@tanstack/react-router";
-import { LogOut, FolderOpen, Bot, LayoutDashboard } from "lucide-react";
+import { LogOut, FolderOpen, Bot, LayoutDashboard, ListTodo } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -96,6 +96,17 @@ export function AppSidebar({ user }: { user: User }) {
                       >
                         <LayoutDashboard />
                         <span>Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/workspaces/$workspaceId/tasks"
+                        params={{ workspaceId }}
+                      >
+                        <ListTodo />
+                        <span>Tasks</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

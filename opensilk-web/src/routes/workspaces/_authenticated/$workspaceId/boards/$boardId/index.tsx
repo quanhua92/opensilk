@@ -58,24 +58,27 @@ function BoardDetailPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              window.history.back()
-            }
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {initialBoard.name}
-          </h1>
+    <div className="flex flex-col gap-4">
+      <div className="flex shrink-0 items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            window.history.back()
+          }
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {initialBoard.name}
+        </h1>
+        <div className="ml-auto">
+          <CreateCardDialog
+            isCreating={isCreating}
+            onCreate={handleCreateCard}
+          />
         </div>
-        <CreateCardDialog isCreating={isCreating} onCreate={handleCreateCard} />
       </div>
 
       <KanbanBoard
@@ -84,6 +87,8 @@ function BoardDetailPage() {
         boardId={boardId}
         onMoveCard={handleMoveCard}
         onRefresh={refreshCards}
+        onCreateCard={handleCreateCard}
+        isCreating={isCreating}
       />
     </div>
   );

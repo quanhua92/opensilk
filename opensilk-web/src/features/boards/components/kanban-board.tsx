@@ -12,10 +12,11 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Card as CardType, CardStatus } from "../types";
+import type { Card as CardType, CardStatus, Priority } from "../types";
 import { DEFAULT_COLUMNS, COLUMN_LABELS } from "../types";
 import KanbanColumn from "./kanban-column";
 import CardDetailDialog from "./card-detail-dialog";
+import CreateCardDialog from "./create-card-dialog";
 
 interface KanbanBoardProps {
   cards: CardType[];
@@ -23,6 +24,13 @@ interface KanbanBoardProps {
   boardId: string;
   onMoveCard: (cardId: string, newStatus: CardStatus) => Promise<void>;
   onRefresh: () => Promise<void>;
+  onCreateCard?: (data: {
+    title: string;
+    description?: string;
+    status?: CardStatus;
+    priority?: Priority;
+  }) => Promise<void>;
+  isCreating?: boolean;
 }
 
 export default function KanbanBoard({
@@ -31,8 +39,12 @@ export default function KanbanBoard({
   boardId,
   onMoveCard,
   onRefresh,
+  onCreateCard,
+  isCreating = false,
 }: KanbanBoardProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [defaultStatus, setDefaultStatus] = useState<CardStatus>("inbox");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -64,6 +76,11 @@ export default function KanbanBoard({
     await onMoveCard(cardId, targetStatus);
   };
 
+  const handleAddCard = (status: CardStatus) => {
+    setDefaultStatus(status);
+    setCreateDialogOpen(true);
+  };
+
   return (
     <>
       <DndContext
@@ -71,7 +88,7 @@ export default function KanbanBoard({
         collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 pb-4">
           <SortableContext
             items={DEFAULT_COLUMNS}
             strategy={horizontalListSortingStrategy}
@@ -83,6 +100,7 @@ export default function KanbanBoard({
                 label={COLUMN_LABELS[status]}
                 cards={cardsByStatus[status]}
                 onClickCard={(id: string) => setSelectedCardId(id)}
+                onAddCard={onCreateCard ? handleAddCard : undefined}
               />
             ))}
           </SortableContext>
@@ -96,6 +114,16 @@ export default function KanbanBoard({
           boardId={boardId}
           onClose={() => setSelectedCardId(null)}
           onRefresh={onRefresh}
+        />
+      )}
+
+      {onCreateCard && (
+        <CreateCardDialog
+          isCreating={isCreating}
+          defaultStatus={defaultStatus}
+          onCreate={onCreateCard}
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
         />
       )}
     </>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,23 +25,47 @@ import { DEFAULT_COLUMNS, COLUMN_LABELS, PRIORITY_CONFIG } from "../types";
 
 interface CreateCardDialogProps {
   isCreating: boolean;
+  defaultStatus?: CardStatus;
   onCreate: (data: {
     title: string;
     description?: string;
     status?: CardStatus;
     priority?: Priority;
   }) => Promise<void>;
+  /** Controlled open — when set, the dialog ignores DialogTrigger */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: React.ReactNode;
 }
 
 export default function CreateCardDialog({
   isCreating,
+  defaultStatus = "inbox",
   onCreate,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  children,
 }: CreateCardDialogProps) {
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<string>("inbox");
+  const [status, setStatus] = useState<string>(defaultStatus);
   const [priority, setPriority] = useState<string>("none");
+
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
+
+  useEffect(() => {
+    setStatus(defaultStatus);
+  }, [defaultStatus]);
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setStatus(defaultStatus);
+    setPriority("none");
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
@@ -54,10 +78,7 @@ export default function CreateCardDialog({
       });
       toast.success("Card created");
       setOpen(false);
-      setTitle("");
-      setDescription("");
-      setStatus("inbox");
-      setPriority("none");
+      resetForm();
     } catch (err) {
       toast.error("Failed to create card", {
         description: err instanceof Error ? err.message : "Unknown error",
@@ -70,20 +91,17 @@ export default function CreateCardDialog({
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) {
-          setTitle("");
-          setDescription("");
-          setStatus("inbox");
-          setPriority("none");
-        }
+        if (!v) resetForm();
       }}
     >
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          New Card
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            New Card
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create Card</DialogTitle>

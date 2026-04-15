@@ -15,6 +15,7 @@ import { Route as WorkspacesAuthenticatedRouteImport } from './routes/workspaces
 import { Route as WorkspacesAuthenticatedIndexRouteImport } from './routes/workspaces/_authenticated/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId'
 import { Route as WorkspacesAuthenticatedWorkspaceIdIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/index'
+import { Route as WorkspacesAuthenticatedWorkspaceIdTasksIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdBoardsIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/boards/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdAgentsIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/agents/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/$taskId'
@@ -53,6 +54,12 @@ const WorkspacesAuthenticatedWorkspaceIdIndexRoute =
     path: '/',
     getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
   } as any)
+const WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute =
+  WorkspacesAuthenticatedWorkspaceIdTasksIndexRouteImport.update({
+    id: '/tasks/',
+    path: '/tasks/',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
 const WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute =
   WorkspacesAuthenticatedWorkspaceIdBoardsIndexRouteImport.update({
     id: '/boards/',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
   '/workspaces/$workspaceId/agents/': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/$workspaceId/boards/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
+  '/workspaces/$workspaceId/tasks/': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
   '/workspaces/$workspaceId/boards/$boardId/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
   '/workspaces/$workspaceId/agents': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/$workspaceId/boards': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
+  '/workspaces/$workspaceId/tasks': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
   '/workspaces/$workspaceId/boards/$boardId': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRoutesById {
@@ -111,6 +120,7 @@ export interface FileRoutesById {
   '/workspaces/_authenticated/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
   '/workspaces/_authenticated/$workspaceId/agents/': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/_authenticated/$workspaceId/boards/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
+  '/workspaces/_authenticated/$workspaceId/tasks/': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
   '/workspaces/_authenticated/$workspaceId/boards/$boardId/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/tasks/$taskId'
     | '/workspaces/$workspaceId/agents/'
     | '/workspaces/$workspaceId/boards/'
+    | '/workspaces/$workspaceId/tasks/'
     | '/workspaces/$workspaceId/boards/$boardId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/tasks/$taskId'
     | '/workspaces/$workspaceId/agents'
     | '/workspaces/$workspaceId/boards'
+    | '/workspaces/$workspaceId/tasks'
     | '/workspaces/$workspaceId/boards/$boardId'
   id:
     | '__root__'
@@ -147,6 +159,7 @@ export interface FileRouteTypes {
     | '/workspaces/_authenticated/$workspaceId/tasks/$taskId'
     | '/workspaces/_authenticated/$workspaceId/agents/'
     | '/workspaces/_authenticated/$workspaceId/boards/'
+    | '/workspaces/_authenticated/$workspaceId/tasks/'
     | '/workspaces/_authenticated/$workspaceId/boards/$boardId/'
   fileRoutesById: FileRoutesById
 }
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdIndexRouteImport
       parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
     }
+    '/workspaces/_authenticated/$workspaceId/tasks/': {
+      id: '/workspaces/_authenticated/$workspaceId/tasks/'
+      path: '/tasks'
+      fullPath: '/workspaces/$workspaceId/tasks/'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
     '/workspaces/_authenticated/$workspaceId/boards/': {
       id: '/workspaces/_authenticated/$workspaceId/boards/'
       path: '/boards'
@@ -236,6 +256,7 @@ interface WorkspacesAuthenticatedWorkspaceIdRouteChildren {
   WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
   WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
+  WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
   WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 
@@ -249,6 +270,8 @@ const WorkspacesAuthenticatedWorkspaceIdRouteChildren: WorkspacesAuthenticatedWo
       WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute,
     WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute,
+    WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute:
+      WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute,
     WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute,
   }

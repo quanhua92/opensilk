@@ -1,3 +1,5 @@
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useDroppable } from "@dnd-kit/core";
 import type { Card, CardStatus } from "../types";
 import KanbanCard from "./kanban-card";
@@ -7,6 +9,7 @@ interface KanbanColumnProps {
   label: string;
   cards: Card[];
   onClickCard: (cardId: string) => void;
+  onAddCard?: (status: CardStatus) => void;
 }
 
 export default function KanbanColumn({
@@ -14,6 +17,7 @@ export default function KanbanColumn({
   label,
   cards,
   onClickCard,
+  onAddCard,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -25,8 +29,20 @@ export default function KanbanColumn({
       }`}
     >
       <div className="flex items-center justify-between border-b px-3 py-2">
-        <h3 className="text-sm font-semibold">{label}</h3>
-        <span className="text-muted-foreground text-xs">{cards.length}</span>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold">{label}</h3>
+          <span className="text-muted-foreground text-xs">{cards.length}</span>
+        </div>
+        {onAddCard && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5"
+            onClick={() => onAddCard(status)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
       <div className="flex flex-col gap-2 overflow-y-auto p-2" style={{ maxHeight: "calc(100vh - 220px)" }}>
         {cards.map((card) => (
