@@ -26,6 +26,19 @@ The cookie is set automatically on successful login.
 
 Browser clients can rely on cookies being sent automatically. Non-browser clients (API scripts, mobile apps) should use the `Authorization: Bearer <token>` header instead.
 
+### Agent-Scoped JWTs
+
+When a worker picks up a task linked to an agent, it obtains an **agent-scoped JWT** via `GET /worker/tasks/{task_id}/context`. This JWT has `scope: "agent"` and includes the `ws` (workspace ID) claim.
+
+| Property | User JWT | Agent JWT |
+|---|---|---|
+| `scope` | `user` (default) | `agent` |
+| `ws` | absent | workspace UUID |
+| `sub` | user UUID | agent UUID |
+| Expiry | 24 hours | 1 hour |
+
+Agent-scoped JWTs are accepted by the same auth middleware. Handlers that are user-only call `require_user_id()` and reject agent tokens with `401`. Agent-capable handlers (e.g. posting comments) pattern-match on the `AuthUser` enum to determine `author_type`.
+
 ## Error Format
 
 All errors return a JSON body:
@@ -448,6 +461,147 @@ Returns a `ListToolsResult` (MCP format). The `tools` array contains one entry p
 
 ---
 
+## Agents
+
+Agents are AI personas scoped to a workspace. Each agent has a name, slug (unique per workspace), persona (system prompt text), avatar URL, and a list of enabled tools.
+
+---
+
+### POST /workspaces/{id}/agents
+
+Create a new agent. **Requires authentication** (workspace owner).
+
+**Request body:**
+```json
+{
+  "name": "Research Agent",
+  "slug": "research-agent",
+  "persona": "You are a research assistant. Always cite sources.",
+  "avatar_url": "https://example.com/avatar.png",
+  "enabled_tools": ["search", "code_review"]
+}
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | yes | Display name |
+| `slug` | string | yes | URL-safe identifier, unique per workspace |
+| `persona` | string | no | System prompt text (defaults to empty string) |
+| `avatar_url` | string | no | URL to avatar image |
+| `enabled_tools` | string[] | no | List of tool names (defaults to `[]`) |
+
+**Response:** `201 Created`
+```json
+{
+  "id": "019d8c00-0000-7000-8000-000000000001",
+  "workspace_id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+  "name": "Research Agent",
+  "slug": "research-agent",
+  "persona": "You are a research assistant. Always cite sources.",
+  "avatar_url": "https://example.com/avatar.png",
+  "enabled_tools": ["search", "code_review"],
+  "created_at": "2026-04-14T08:00:00Z",
+  "updated_at": "2026-04-14T08:00:00Z"
+}
+```
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found
+- `409` — Agent slug already exists in this workspace
+
+---
+
+### GET /workspaces/{id}/agents
+
+List all agents for a workspace. **Requires authentication** (workspace owner).
+
+**Response:** `200 OK` — array of agent objects (same shape as create response), ordered by `created_at DESC`
+
+Returns an empty array if no agents exist.
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found
+
+---
+
+### GET /workspaces/{id}/agents/{agent_id}
+
+Get a single agent by ID. **Requires authentication** (workspace owner).
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID (workspace) |
+| `agent_id` | UUID (agent) |
+
+**Response:** `200 OK` — agent object
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found or agent not found
+
+---
+
+### PATCH /workspaces/{id}/agents/{agent_id}
+
+Update an agent. Only provided fields are updated (COALESCE pattern). The `slug` cannot be changed. **Requires authentication** (workspace owner).
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID (workspace) |
+| `agent_id` | UUID (agent) |
+
+**Request body** (all fields optional):
+```json
+{
+  "name": "Updated Name",
+  "persona": "Updated system prompt.",
+  "avatar_url": "https://example.com/new-avatar.png",
+  "enabled_tools": ["search", "code_review", "summarize"]
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | New display name |
+| `persona` | string | New system prompt |
+| `avatar_url` | string | New avatar URL |
+| `enabled_tools` | string[] | New tool list |
+
+**Response:** `200 OK` — updated agent object
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found or agent not found
+
+---
+
+### DELETE /workspaces/{id}/agents/{agent_id}
+
+Delete an agent. **Requires authentication** (workspace owner).
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `id` | UUID (workspace) |
+| `agent_id` | UUID (agent) |
+
+No request body.
+
+**Response:** `200 OK` — the deleted agent object
+
+**Error responses:**
+- `401` — Not authenticated
+- `404` — Workspace not found or agent not found
+
+---
+
 ## Worker Endpoints
 
 Internal endpoints for the Python worker. Authenticated by `WORKER_TOKEN` bearer — no user registration or login required.
@@ -512,3 +666,48 @@ Update a task (claim, complete, heartbeat, or retry). Used exclusively by the wo
 **Error responses:**
 - `401` — Invalid or missing `WORKER_TOKEN`
 - `404` — Task not found
+
+---
+
+### GET /worker/tasks/{task_id}/context
+
+Get agent context for a task. Returns an agent-scoped JWT and metadata the worker needs to act as the agent on the linked card/board. **Requires `WORKER_TOKEN` bearer auth.**
+
+The task must have both `agent_id` and `card_id` set. Returns `404` if either is missing.
+
+**Path parameters:**
+
+| Parameter | Type |
+|---|---|
+| `task_id` | UUID |
+
+**Response:** `200 OK`
+```json
+{
+  "token": "eyJ...",
+  "expires_at": "2026-04-14T09:00:00Z",
+  "agent_id": "019d8c00-0000-7000-8000-000000000001",
+  "agent_name": "Research Agent",
+  "agent_persona": "You are a research assistant. Always cite sources.",
+  "workspace_id": "019d8a6b-5b9d-765c-9321-3a0729c550a2",
+  "board_id": "019d8d00-0000-7000-8000-000000000001",
+  "card_id": "019d8d00-0000-7000-8000-000000000002",
+  "card_title": "Research competitors"
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `token` | string | Agent-scoped JWT (1 hour expiry). Use as `Authorization: Bearer <token>` for board/card endpoints. |
+| `expires_at` | string (ISO 8601) | When the token expires |
+| `agent_id` | UUID | The agent executing this task |
+| `agent_name` | string | Agent display name |
+| `agent_persona` | string | Full system prompt — pass to the LLM as the persona |
+| `workspace_id` | UUID | Workspace containing the agent and board |
+| `board_id` | UUID | Board containing the card |
+| `card_id` | UUID | Card linked to this task |
+| `card_title` | string | Card title for context |
+
+**Error responses:**
+- `401` — Invalid or missing `WORKER_TOKEN`
+- `404` — Task not found, task has no agent assigned, or task has no card linked
