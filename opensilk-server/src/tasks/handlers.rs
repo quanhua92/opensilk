@@ -80,7 +80,7 @@ pub async fn list_task_types(
     Path(workspace_id): Path<Uuid>,
     Query(params): Query<ListTaskTypesQuery>,
 ) -> Result<Json<ListToolsResult>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     let mut tools = Vec::new();
 
@@ -148,7 +148,7 @@ pub async fn create(
     Path(workspace_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<(StatusCode, Json<TaskResponse>), AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     if req.task_type != "workflow" && req.task_type != "agentic" {
         return Err(AppError::Auth(
@@ -193,7 +193,7 @@ pub async fn list(
     Path(workspace_id): Path<Uuid>,
     Query(params): Query<ListTasksQuery>,
 ) -> Result<Json<Vec<TaskResponse>>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     let rows = match params.status {
         Some(ref status) => {
@@ -235,7 +235,7 @@ pub async fn get(
     Extension(user): Extension<AuthUser>,
     Path((workspace_id, task_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<TaskResponse>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     let row = sqlx::query_as!(
         TaskResponse,
@@ -260,7 +260,7 @@ pub async fn update(
     Path((workspace_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<TaskResponse>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     // Retry logic: when retry=true and current status is running,
     // check retry_count against max_retries server-side
@@ -356,7 +356,7 @@ pub async fn cancel(
     Extension(user): Extension<AuthUser>,
     Path((workspace_id, task_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<TaskResponse>, AppError> {
-    verify_workspace_ownership(&state.pool, workspace_id, user.user_id).await?;
+    verify_workspace_ownership(&state.pool, workspace_id, user.require_user_id()?).await?;
 
     let row = sqlx::query_as!(
         TaskResponse,

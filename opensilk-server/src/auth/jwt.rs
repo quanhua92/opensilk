@@ -6,14 +6,27 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 
+fn default_scope() -> String {
+    "user".into()
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
     pub exp: i64,
     pub iat: i64,
+    #[serde(default = "default_scope")]
+    pub scope: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ws: Option<String>,
 }
 
-pub fn generate_jwt(user_id: Uuid, secret: &str) -> Result<String, AppError> {
+pub fn generate_jwt(
+    user_id: Uuid,
+    secret: &str,
+    scope: Option<&str>,
+    workspace_id: Option<&str>,
+) -> Result<String, AppError> {
     let now = Utc::now();
     let expiration = now + chrono::Duration::hours(24);
 
@@ -21,10 +34,28 @@ pub fn generate_jwt(user_id: Uuid, secret: &str) -> Result<String, AppError> {
         sub: user_id.to_string(),
         exp: expiration.timestamp(),
         iat: now.timestamp(),
+        scope: scope.unwrap_or("user").to_string(),
+        ws: workspace_id.map(|s| s.to_string()),
     };
 
     encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
         .map_err(|e| AppError::Internal(format!("Failed to generate JWT: {}", e)))
+}
+
+pub fn generate_agent_jwt(agent_id: Uuid, workspace_id: Uuid, secret: &str) -> Result<String, AppError> {
+    let now = Utc::now();
+    let expiration = now + chrono::Duration::hours(1);
+
+    let claims = Claims {
+        sub: agent_id.to_string(),
+        exp: expiration.timestamp(),
+        iat: now.timestamp(),
+        scope: "agent".into(),
+        ws: Some(workspace_id.to_string()),
+    };
+
+    encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
+        .map_err(|e| AppError::Internal(format!("Failed to generate agent JWT: {}", e)))
 }
 
 pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, AppError> {
@@ -100,9 +131,19 @@ use axum::extract::State;
 
 use crate::state::AppState;
 
-#[derive(Debug, Clone, Serialize)]
-pub struct AuthUser {
-    pub user_id: Uuid,
+#[derive(Debug, Clone)]
+pub enum AuthUser {
+    User { user_id: Uuid },
+    Agent { agent_id: Uuid, workspace_id: Uuid },
+}
+
+impl AuthUser {
+    pub fn require_user_id(&self) -> Result<Uuid, AppError> {
+        match self {
+            AuthUser::User { user_id } => Ok(*user_id),
+            AuthUser::Agent { .. } => Err(AppError::Auth("user scope required".into())),
+        }
+    }
 }
 
 pub async fn auth_middleware(
@@ -113,9 +154,43 @@ pub async fn auth_middleware(
 ) -> Result<Response, AppError> {
     let token = parse_access_token_from_headers(headers.get("authorization"), headers.get("cookie"))?;
     let claims = verify_jwt(&token, &state.jwt_secret)?;
-    let user_id = Uuid::parse_str(&claims.sub)
-        .map_err(|_| AppError::Auth("Invalid user_id in token".into()))?;
 
-    request.extensions_mut().insert(AuthUser { user_id });
+    match claims.scope.as_str() {
+        "agent" => {
+            let workspace_id = claims.ws
+                .ok_or(AppError::Auth("Missing workspace claim for agent scope".into()))?;
+
+            let agent_id = Uuid::parse_str(&claims.sub)
+                .map_err(|_| AppError::Auth("Invalid agent_id in token".into()))?;
+
+            let workspace_uuid = Uuid::parse_str(&workspace_id)
+                .map_err(|_| AppError::Auth("Invalid workspace_id in token".into()))?;
+
+            // Verify agent exists in this workspace
+            let exists: bool = sqlx::query_scalar!(
+                r#"SELECT EXISTS(SELECT 1 FROM agents WHERE id = $1 AND workspace_id = $2) AS "exists!""#,
+                agent_id,
+                workspace_uuid,
+            )
+            .fetch_one(&state.pool)
+            .await?;
+
+            if !exists {
+                return Err(AppError::Auth("Agent not found in workspace".into()));
+            }
+
+            request.extensions_mut().insert(AuthUser::Agent {
+                agent_id,
+                workspace_id: workspace_uuid,
+            });
+        }
+        _ => {
+            let user_id = Uuid::parse_str(&claims.sub)
+                .map_err(|_| AppError::Auth("Invalid user_id in token".into()))?;
+
+            request.extensions_mut().insert(AuthUser::User { user_id });
+        }
+    }
+
     Ok(next.run(request).await)
 }

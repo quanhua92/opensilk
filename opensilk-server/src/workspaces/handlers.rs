@@ -35,7 +35,7 @@ pub async fn create(
         VALUES ($1, $2)
         RETURNING id, name, owner_id, created_at, updated_at"#,
         req.name,
-        user.user_id,
+        user.require_user_id()?,
     )
     .fetch_one(&state.pool)
     .await?;
@@ -53,7 +53,7 @@ pub async fn list(
         FROM workspaces
         WHERE owner_id = $1
         ORDER BY created_at DESC"#,
-        user.user_id,
+        user.require_user_id()?,
     )
     .fetch_all(&state.pool)
     .await?;
@@ -72,7 +72,7 @@ pub async fn get(
         FROM workspaces
         WHERE id = $1 AND owner_id = $2"#,
         id,
-        user.user_id,
+        user.require_user_id()?,
     )
     .fetch_optional(&state.pool)
     .await?

@@ -105,7 +105,7 @@ pub async fn login(
         return Err(AppError::Auth("Invalid email or password".into()));
     }
 
-    let token = generate_jwt(user.id, &state.jwt_secret)?;
+    let token = generate_jwt(user.id, &state.jwt_secret, None, None)?;
     let cookie = build_cookie(&token);
 
     Ok((
@@ -131,7 +131,7 @@ pub async fn me(
     let row = sqlx::query_as!(
         UserResponse,
         r#"SELECT id, email, full_name, created_at FROM users WHERE id = $1"#,
-        user.user_id,
+        user.require_user_id()?,
     )
     .fetch_optional(&state.pool)
     .await?
