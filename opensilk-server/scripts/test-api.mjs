@@ -262,6 +262,60 @@ async function run() {
     assert(toolNames.includes('openclaw'), `contains openclaw`);
     console.log();
 
+    // --- Agent Tests ---
+    console.log('POST /workspaces/{ws}/agents');
+    const createAgent = await fetchJSON(`/workspaces/${workspaceId}/agents`, {
+        method: 'POST',
+        body: JSON.stringify({
+            name: 'Test Agent',
+            slug: 'test-agent',
+            persona: 'You are a helpful assistant.',
+            enabled_tools: ['search', 'code_review'],
+        }),
+    });
+    assert(createAgent.status === 201, `returns 201`);
+    assert(createAgent.data?.id != null, `has id`);
+    assert(createAgent.data?.slug === 'test-agent', `slug matches`);
+    let agentId = createAgent.data?.id;
+    console.log();
+
+    console.log('GET /workspaces/{ws}/agents');
+    const listAgents = await fetchJSON(`/workspaces/${workspaceId}/agents`);
+    assert(listAgents.status === 200, `returns 200`);
+    assert(Array.isArray(listAgents.data), `returns array`);
+    assert(listAgents.data.length >= 1, `has at least 1 agent`);
+    console.log();
+
+    console.log('GET /workspaces/{ws}/agents/{id}');
+    const getAgent = await fetchJSON(`/workspaces/${workspaceId}/agents/${agentId}`);
+    assert(getAgent.status === 200, `returns 200`);
+    assert(getAgent.data?.id === agentId, `id matches`);
+    console.log();
+
+    console.log('PATCH /workspaces/{ws}/agents/{id}');
+    const updateAgent = await fetchJSON(`/workspaces/${workspaceId}/agents/${agentId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ persona: 'Updated persona.' }),
+    });
+    assert(updateAgent.status === 200, `returns 200`);
+    assert(updateAgent.data?.persona === 'Updated persona.', `persona updated`);
+    console.log();
+
+    console.log('POST /workspaces/{ws}/agents (duplicate slug)');
+    const dupAgent = await fetchJSON(`/workspaces/${workspaceId}/agents`, {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Another', slug: 'test-agent' }),
+    });
+    assert(dupAgent.status === 409, `returns 409 for duplicate slug`);
+    console.log();
+
+    console.log('DELETE /workspaces/{ws}/agents/{id}');
+    const delAgent = await fetchJSON(`/workspaces/${workspaceId}/agents/${agentId}`, {
+        method: 'DELETE',
+    });
+    assert(delAgent.status === 200, `returns 200`);
+    console.log();
+
     // Summary
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exit(failed > 0 ? 1 : 0);
