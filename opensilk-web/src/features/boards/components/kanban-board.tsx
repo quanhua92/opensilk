@@ -15,7 +15,6 @@ import {
 import type { Card as CardType, CardStatus, Priority } from "../types";
 import { DEFAULT_COLUMNS, COLUMN_LABELS } from "../types";
 import KanbanColumn from "./kanban-column";
-import CardDetailDialog from "./card-detail-dialog";
 import CreateCardDialog from "./create-card-dialog";
 
 interface KanbanBoardProps {
@@ -23,7 +22,6 @@ interface KanbanBoardProps {
   workspaceId: string;
   boardId: string;
   onMoveCard: (cardId: string, newStatus: CardStatus) => Promise<void>;
-  onRefresh: () => Promise<void>;
   onCreateCard?: (data: {
     title: string;
     description?: string;
@@ -38,11 +36,9 @@ export default function KanbanBoard({
   workspaceId,
   boardId,
   onMoveCard,
-  onRefresh,
   onCreateCard,
   isCreating = false,
 }: KanbanBoardProps) {
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [defaultStatus, setDefaultStatus] = useState<CardStatus>("inbox");
 
@@ -99,23 +95,14 @@ export default function KanbanBoard({
                 status={status}
                 label={COLUMN_LABELS[status]}
                 cards={cardsByStatus[status]}
-                onClickCard={(id: string) => setSelectedCardId(id)}
+                workspaceId={workspaceId}
+                boardId={boardId}
                 onAddCard={onCreateCard ? handleAddCard : undefined}
               />
             ))}
           </SortableContext>
         </div>
       </DndContext>
-
-      {selectedCardId && (
-        <CardDetailDialog
-          cardId={selectedCardId}
-          workspaceId={workspaceId}
-          boardId={boardId}
-          onClose={() => setSelectedCardId(null)}
-          onRefresh={onRefresh}
-        />
-      )}
 
       {onCreateCard && (
         <CreateCardDialog

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
@@ -7,10 +8,11 @@ import type { Card } from "../types";
 
 interface KanbanCardProps {
   card: Card;
-  onClick: () => void;
+  workspaceId: string;
+  boardId: string;
 }
 
-export default function KanbanCard({ card, onClick }: KanbanCardProps) {
+export default function KanbanCard({ card, workspaceId, boardId }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id });
 
@@ -27,7 +29,6 @@ export default function KanbanCard({ card, onClick }: KanbanCardProps) {
       ref={setNodeRef}
       style={style}
       className="cursor-pointer rounded-md border bg-card p-3 shadow-sm transition-shadow hover:shadow-md"
-      onClick={onClick}
     >
       <div className="flex items-start gap-1">
         <button
@@ -37,7 +38,11 @@ export default function KanbanCard({ card, onClick }: KanbanCardProps) {
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <div className="min-w-0 flex-1">
+        <Link
+          to="/workspaces/$workspaceId/boards/$boardId/$cardId"
+          params={{ workspaceId, boardId, cardId: card.id }}
+          className="min-w-0 flex-1"
+        >
           <p className="text-sm font-medium leading-tight">{card.title}</p>
           {card.description && (
             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -52,7 +57,7 @@ export default function KanbanCard({ card, onClick }: KanbanCardProps) {
               {priorityConfig.label}
             </Badge>
           )}
-        </div>
+        </Link>
       </div>
     </div>
   );

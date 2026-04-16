@@ -86,7 +86,6 @@ function BoardDetailPage() {
         workspaceId={workspaceId}
         boardId={boardId}
         onMoveCard={handleMoveCard}
-        onRefresh={refreshCards}
         onCreateCard={handleCreateCard}
         isCreating={isCreating}
       />

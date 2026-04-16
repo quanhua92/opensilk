@@ -8,7 +8,8 @@ interface KanbanColumnProps {
   status: CardStatus;
   label: string;
   cards: Card[];
-  onClickCard: (cardId: string) => void;
+  workspaceId: string;
+  boardId: string;
   onAddCard?: (status: CardStatus) => void;
 }
 
@@ -16,7 +17,8 @@ export default function KanbanColumn({
   status,
   label,
   cards,
-  onClickCard,
+  workspaceId,
+  boardId,
   onAddCard,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
@@ -46,7 +48,7 @@ export default function KanbanColumn({
       </div>
       <div className="flex flex-col gap-2 overflow-y-auto p-2" style={{ maxHeight: "calc(100vh - 220px)" }}>
         {cards.map((card) => (
-          <KanbanCard key={card.id} card={card} onClick={() => onClickCard(card.id)} />
+          <KanbanCard key={card.id} card={card} workspaceId={workspaceId} boardId={boardId} />
         ))}
         {cards.length === 0 && (
           <div className="py-4 text-center text-xs text-muted-foreground">

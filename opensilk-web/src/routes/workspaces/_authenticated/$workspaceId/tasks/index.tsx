@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getTasks, createTask as createTaskFn } from "@/features/tasks/server-fns";
+import { useNavigate } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getTasks } from "@/features/tasks/server-fns";
 import { TASK_POLL_INTERVAL_MS } from "@/features/tasks/constants";
 import TaskList from "@/features/tasks/components/task-list";
-import CreateTaskDialog from "@/features/tasks/components/create-task-dialog";
 import OverviewStats from "@/features/tasks/components/overview-stats";
 
 export const Route = createFileRoute("/workspaces/_authenticated/$workspaceId/tasks/")({
@@ -18,8 +20,8 @@ export const Route = createFileRoute("/workspaces/_authenticated/$workspaceId/ta
 function TasksPage() {
   const { workspaceId } = Route.useParams();
   const { initialTasks } = Route.useLoaderData();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState(initialTasks);
-  const [isCreating, setIsCreating] = useState(false);
 
   const hasActiveTasks = tasks.some(
     (t) => t.status === "pending" || t.status === "running",
@@ -36,32 +38,22 @@ function TasksPage() {
     return () => clearInterval(interval);
   }, [hasActiveTasks, workspaceId]);
 
-  const handleCreateTask = async (data: {
-    type: "workflow" | "agentic";
-    name: string;
-    input_data?: Record<string, unknown>;
-  }) => {
-    setIsCreating(true);
-    try {
-      await createTaskFn({
-        data: { workspaceId, ...data },
-      });
-      const refreshed = await getTasks({ data: { workspaceId } });
-      setTasks(refreshed);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
-        <CreateTaskDialog
-          workspaceId={workspaceId}
-          isCreating={isCreating}
-          onCreate={handleCreateTask}
-        />
+        <Button
+          size="sm"
+          onClick={() =>
+            navigate({
+              to: "/workspaces/$workspaceId/tasks/new",
+              params: { workspaceId },
+            })
+          }
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          New Task
+        </Button>
       </div>
 
       <OverviewStats tasks={tasks} />

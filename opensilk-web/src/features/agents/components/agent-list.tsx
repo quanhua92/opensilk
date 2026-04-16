@@ -1,38 +1,24 @@
-import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Agent } from "../types";
 import AgentCard from "./agent-card";
-import CreateAgentDialog from "./create-agent-dialog";
-import EditAgentDialog from "./edit-agent-dialog";
 
 interface AgentListProps {
   agents: Agent[];
   isLoading?: boolean;
-  onCreate: (data: {
-    name: string;
-    slug: string;
-    persona: string;
-    enabled_tools?: string[];
-  }) => Promise<void>;
-  onUpdate: (data: {
-    agentId: string;
-    persona?: string;
-    name?: string;
-    enabled_tools?: string[];
-  }) => Promise<void>;
+  workspaceId: string;
   onDelete: (agentId: string) => Promise<void>;
 }
 
 export default function AgentList({
   agents,
   isLoading,
-  onCreate,
-  onUpdate,
+  workspaceId,
   onDelete,
 }: AgentListProps) {
-  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -44,21 +30,6 @@ export default function AgentList({
     );
   }
 
-  const handleUpdate = async (data: {
-    agentId: string;
-    persona?: string;
-    name?: string;
-    enabled_tools?: string[];
-  }) => {
-    setIsUpdating(true);
-    try {
-      await onUpdate(data);
-      setEditingAgent(null);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const handleDelete = async (agent: Agent) => {
     if (!confirm(`Delete agent "${agent.name}"?`)) return;
     await onDelete(agent.id);
@@ -66,19 +37,19 @@ export default function AgentList({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Agents</h2>
-        <CreateAgentDialog
-          isCreating={isCreating}
-          onCreate={async (data) => {
-            setIsCreating(true);
-            try {
-              await onCreate(data);
-            } finally {
-              setIsCreating(false);
-            }
-          }}
-        />
+      <div className="flex items-center justify-end">
+        <Button
+          size="sm"
+          onClick={() =>
+            navigate({
+              to: "/workspaces/$workspaceId/agents/new",
+              params: { workspaceId },
+            })
+          }
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          New Agent
+        </Button>
       </div>
 
       {agents.length === 0 ? (
@@ -91,19 +62,17 @@ export default function AgentList({
             <AgentCard
               key={agent.id}
               agent={agent}
-              onEdit={setEditingAgent}
-              onDelete={handleDelete}
+              onEdit={() =>
+                navigate({
+                  to: "/workspaces/$workspaceId/agents/$agentId",
+                  params: { workspaceId, agentId: agent.id },
+                })
+              }
+              onDelete={() => handleDelete(agent)}
             />
           ))}
         </div>
       )}
-
-      <EditAgentDialog
-        agent={editingAgent}
-        isUpdating={isUpdating}
-        onUpdate={handleUpdate}
-        onClose={() => setEditingAgent(null)}
-      />
     </div>
   );
 }

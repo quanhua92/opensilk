@@ -18,8 +18,12 @@ import { Route as WorkspacesAuthenticatedWorkspaceIdIndexRouteImport } from './r
 import { Route as WorkspacesAuthenticatedWorkspaceIdTasksIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdBoardsIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/boards/index'
 import { Route as WorkspacesAuthenticatedWorkspaceIdAgentsIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/agents/index'
+import { Route as WorkspacesAuthenticatedWorkspaceIdTasksNewRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/new'
 import { Route as WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId/tasks/$taskId'
+import { Route as WorkspacesAuthenticatedWorkspaceIdAgentsNewRouteImport } from './routes/workspaces/_authenticated/$workspaceId/agents/new'
+import { Route as WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId/agents/$agentId'
 import { Route as WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRouteImport } from './routes/workspaces/_authenticated/$workspaceId/boards/$boardId/index'
+import { Route as WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRouteImport } from './routes/workspaces/_authenticated/$workspaceId/boards/$boardId/$cardId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -72,16 +76,40 @@ const WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute =
     path: '/agents/',
     getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
   } as any)
+const WorkspacesAuthenticatedWorkspaceIdTasksNewRoute =
+  WorkspacesAuthenticatedWorkspaceIdTasksNewRouteImport.update({
+    id: '/tasks/new',
+    path: '/tasks/new',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
 const WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute =
   WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
     path: '/tasks/$taskId',
     getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
   } as any)
+const WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute =
+  WorkspacesAuthenticatedWorkspaceIdAgentsNewRouteImport.update({
+    id: '/agents/new',
+    path: '/agents/new',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
+const WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute =
+  WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRouteImport.update({
+    id: '/agents/$agentId',
+    path: '/agents/$agentId',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
 const WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute =
   WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRouteImport.update({
     id: '/boards/$boardId/',
     path: '/boards/$boardId/',
+    getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
+  } as any)
+const WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute =
+  WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRouteImport.update({
+    id: '/boards/$boardId/$cardId',
+    path: '/boards/$boardId/$cardId',
     getParentRoute: () => WorkspacesAuthenticatedWorkspaceIdRoute,
   } as any)
 
@@ -92,10 +120,14 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdRouteWithChildren
   '/workspaces/': typeof WorkspacesAuthenticatedIndexRoute
   '/workspaces/$workspaceId/': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
+  '/workspaces/$workspaceId/agents/$agentId': typeof WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute
+  '/workspaces/$workspaceId/agents/new': typeof WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
+  '/workspaces/$workspaceId/tasks/new': typeof WorkspacesAuthenticatedWorkspaceIdTasksNewRoute
   '/workspaces/$workspaceId/agents/': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/$workspaceId/boards/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
   '/workspaces/$workspaceId/tasks/': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
+  '/workspaces/$workspaceId/boards/$boardId/$cardId': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute
   '/workspaces/$workspaceId/boards/$boardId/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -103,10 +135,14 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/workspaces': typeof WorkspacesAuthenticatedIndexRoute
   '/workspaces/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
+  '/workspaces/$workspaceId/agents/$agentId': typeof WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute
+  '/workspaces/$workspaceId/agents/new': typeof WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute
   '/workspaces/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
+  '/workspaces/$workspaceId/tasks/new': typeof WorkspacesAuthenticatedWorkspaceIdTasksNewRoute
   '/workspaces/$workspaceId/agents': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/$workspaceId/boards': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
   '/workspaces/$workspaceId/tasks': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
+  '/workspaces/$workspaceId/boards/$boardId/$cardId': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute
   '/workspaces/$workspaceId/boards/$boardId': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRoutesById {
@@ -117,10 +153,14 @@ export interface FileRoutesById {
   '/workspaces/_authenticated/$workspaceId': typeof WorkspacesAuthenticatedWorkspaceIdRouteWithChildren
   '/workspaces/_authenticated/': typeof WorkspacesAuthenticatedIndexRoute
   '/workspaces/_authenticated/$workspaceId/': typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
+  '/workspaces/_authenticated/$workspaceId/agents/$agentId': typeof WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute
+  '/workspaces/_authenticated/$workspaceId/agents/new': typeof WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute
   '/workspaces/_authenticated/$workspaceId/tasks/$taskId': typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
+  '/workspaces/_authenticated/$workspaceId/tasks/new': typeof WorkspacesAuthenticatedWorkspaceIdTasksNewRoute
   '/workspaces/_authenticated/$workspaceId/agents/': typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   '/workspaces/_authenticated/$workspaceId/boards/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
   '/workspaces/_authenticated/$workspaceId/tasks/': typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
+  '/workspaces/_authenticated/$workspaceId/boards/$boardId/$cardId': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute
   '/workspaces/_authenticated/$workspaceId/boards/$boardId/': typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -132,10 +172,14 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId'
     | '/workspaces/'
     | '/workspaces/$workspaceId/'
+    | '/workspaces/$workspaceId/agents/$agentId'
+    | '/workspaces/$workspaceId/agents/new'
     | '/workspaces/$workspaceId/tasks/$taskId'
+    | '/workspaces/$workspaceId/tasks/new'
     | '/workspaces/$workspaceId/agents/'
     | '/workspaces/$workspaceId/boards/'
     | '/workspaces/$workspaceId/tasks/'
+    | '/workspaces/$workspaceId/boards/$boardId/$cardId'
     | '/workspaces/$workspaceId/boards/$boardId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,10 +187,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/workspaces'
     | '/workspaces/$workspaceId'
+    | '/workspaces/$workspaceId/agents/$agentId'
+    | '/workspaces/$workspaceId/agents/new'
     | '/workspaces/$workspaceId/tasks/$taskId'
+    | '/workspaces/$workspaceId/tasks/new'
     | '/workspaces/$workspaceId/agents'
     | '/workspaces/$workspaceId/boards'
     | '/workspaces/$workspaceId/tasks'
+    | '/workspaces/$workspaceId/boards/$boardId/$cardId'
     | '/workspaces/$workspaceId/boards/$boardId'
   id:
     | '__root__'
@@ -156,10 +204,14 @@ export interface FileRouteTypes {
     | '/workspaces/_authenticated/$workspaceId'
     | '/workspaces/_authenticated/'
     | '/workspaces/_authenticated/$workspaceId/'
+    | '/workspaces/_authenticated/$workspaceId/agents/$agentId'
+    | '/workspaces/_authenticated/$workspaceId/agents/new'
     | '/workspaces/_authenticated/$workspaceId/tasks/$taskId'
+    | '/workspaces/_authenticated/$workspaceId/tasks/new'
     | '/workspaces/_authenticated/$workspaceId/agents/'
     | '/workspaces/_authenticated/$workspaceId/boards/'
     | '/workspaces/_authenticated/$workspaceId/tasks/'
+    | '/workspaces/_authenticated/$workspaceId/boards/$boardId/$cardId'
     | '/workspaces/_authenticated/$workspaceId/boards/$boardId/'
   fileRoutesById: FileRoutesById
 }
@@ -234,11 +286,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRouteImport
       parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
     }
+    '/workspaces/_authenticated/$workspaceId/tasks/new': {
+      id: '/workspaces/_authenticated/$workspaceId/tasks/new'
+      path: '/tasks/new'
+      fullPath: '/workspaces/$workspaceId/tasks/new'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksNewRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
     '/workspaces/_authenticated/$workspaceId/tasks/$taskId': {
       id: '/workspaces/_authenticated/$workspaceId/tasks/$taskId'
       path: '/tasks/$taskId'
       fullPath: '/workspaces/$workspaceId/tasks/$taskId'
       preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
+    '/workspaces/_authenticated/$workspaceId/agents/new': {
+      id: '/workspaces/_authenticated/$workspaceId/agents/new'
+      path: '/agents/new'
+      fullPath: '/workspaces/$workspaceId/agents/new'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsNewRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
+    '/workspaces/_authenticated/$workspaceId/agents/$agentId': {
+      id: '/workspaces/_authenticated/$workspaceId/agents/$agentId'
+      path: '/agents/$agentId'
+      fullPath: '/workspaces/$workspaceId/agents/$agentId'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRouteImport
       parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
     }
     '/workspaces/_authenticated/$workspaceId/boards/$boardId/': {
@@ -248,15 +321,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRouteImport
       parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
     }
+    '/workspaces/_authenticated/$workspaceId/boards/$boardId/$cardId': {
+      id: '/workspaces/_authenticated/$workspaceId/boards/$boardId/$cardId'
+      path: '/boards/$boardId/$cardId'
+      fullPath: '/workspaces/$workspaceId/boards/$boardId/$cardId'
+      preLoaderRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRouteImport
+      parentRoute: typeof WorkspacesAuthenticatedWorkspaceIdRoute
+    }
   }
 }
 
 interface WorkspacesAuthenticatedWorkspaceIdRouteChildren {
   WorkspacesAuthenticatedWorkspaceIdIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdIndexRoute
+  WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute
+  WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute
   WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute
+  WorkspacesAuthenticatedWorkspaceIdTasksNewRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksNewRoute
   WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute
   WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute
   WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute
+  WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute
   WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute: typeof WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute
 }
 
@@ -264,14 +348,22 @@ const WorkspacesAuthenticatedWorkspaceIdRouteChildren: WorkspacesAuthenticatedWo
   {
     WorkspacesAuthenticatedWorkspaceIdIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdIndexRoute,
+    WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute:
+      WorkspacesAuthenticatedWorkspaceIdAgentsAgentIdRoute,
+    WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute:
+      WorkspacesAuthenticatedWorkspaceIdAgentsNewRoute,
     WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute:
       WorkspacesAuthenticatedWorkspaceIdTasksTaskIdRoute,
+    WorkspacesAuthenticatedWorkspaceIdTasksNewRoute:
+      WorkspacesAuthenticatedWorkspaceIdTasksNewRoute,
     WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdAgentsIndexRoute,
     WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdBoardsIndexRoute,
     WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdTasksIndexRoute,
+    WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute:
+      WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdCardIdRoute,
     WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute:
       WorkspacesAuthenticatedWorkspaceIdBoardsBoardIdIndexRoute,
   }
